@@ -21,13 +21,13 @@ library("DESeq2")
 
 ## tximport (to import abundance info) ------------------------------------
 
-# path to file with id mapping 
+# path to file with id mapping
 
 tx2genePath <- "D:/Documenten/PhD/Data/p_expression/typhimurium_D23580/R/tx2gene.txt"
 
 tx2gene <- read.delim("~/PhD/Data/p_expression/typhimurium_D23580/R/tx2gene.txt", header=FALSE)
 
-# paths with kallisto data files 
+# paths with kallisto data files
 
 paddo <- "D:/Documenten/PhD/Data/p_expression/typhimurium_D23580/kallisto_tphm_all"
 
@@ -79,26 +79,32 @@ dim(b)
 
 colMeans(a) == colMeans(b)
 
-## select samples that originate from Typhimurium D23580 ------------------
+
+
+## Construct compendia ----------------------------------------------------
 
 measured_conditions <- read.csv("~/PhD/Data/p_expression/typhimurium_D23580/measured_conditions.csv", sep=";")
 
 tpm_d23580_ids <- measured_conditions[which(measured_conditions$Strain == 'D23580'), 'SRA']
 
-  
+tpm_L474_ids <- measured_conditions[which(measured_conditions$Strain == 'L474'), 'SRA']
+
+
+### Typhimurium D23580 compendium -------------------------------------------
+
 
 if (all(tpm_d23580_ids %in% colnames(txi_kallisto$counts))) {
-  
+
   tpm_d23580_nd <- normalised_counts[ , tpm_d23580_ids]
-  
-  if (length(tpm_d23580_ids) != ncol(tpm_d23580_nd)) 
+
+  if (length(tpm_d23580_ids) != ncol(tpm_d23580_nd))
     stop("check the number of provided IDs and normalised expression data columns")
 
-  
+
 }
 
 
-## add pseudocounts of 0.001 ---------------------------------------------
+# add pseudocounts of 0.001
 
 tpm_d23580_nd[tpm_d23580_nd == 0] <- 0.001
 
@@ -106,17 +112,17 @@ tpm_d23580_nd[tpm_d23580_nd == 0] <- 0.001
 min(tpm_d23580_nd)
 
 
-## calculate log fold change ---------------------------------------------
+# calculate log fold change
 
 # tpm_d23580_nd is a matrix of normalised expression data from Typhimurium D23580
-# the 'normal condition' has SRA id SRR7814100. 
+# the 'normal condition' has SRA id SRR7814100.
 # the FC should therefore be calculated relative to SRR7814100.
 
 
 function_calc_logFC <- function(row_x) {
-  
+
   log2(row_x[2] / row_x[1])
-  
+
 }
 
 logFC_matrix <- matrix(, nrow = nrow(tpm_d23580_nd), ncol = (ncol(tpm_d23580_nd) -1))
@@ -125,30 +131,103 @@ rownames(logFC_matrix) <- rownames(tpm_d23580_nd)
 colnames(logFC_matrix) <- 2:ncol(tpm_d23580_nd)
 
 for (i in 2:ncol(tpm_d23580_nd)) {
-  
+
   cols <- c(1, i)
-  
+
   j <- i-1
-  
+
   logFC_matrix[ ,j] <- apply(tpm_d23580_nd[, cols], 1, function_calc_logFC)
-  
+
   colnames(logFC_matrix)[j] <- paste (
-    colnames(tpm_d23580_nd)[1], 
-    colnames(tpm_d23580_nd)[i], 
+    colnames(tpm_d23580_nd)[1],
+    colnames(tpm_d23580_nd)[i],
     sep = "-", collapse = NULL)
-  
+
 
 }
 
 dim(logFC_matrix)
-  
+# -> 34 contrasts for 4521 genes
+
+
+write.table(logFC_matrix,
+            file="D:/Documenten/PhD/Data/p_expression/typhimurium_D23580/compendium/D23580_expr.txt",
+            sep = "\t")
+
+
+## Typhimurium L474 compendium -------------------------------------------
+
+
+if (all(tpm_L474_ids %in% colnames(txi_kallisto$counts))) {
+
+  tpm_L474_nd <- normalised_counts[ , tpm_L474_ids]
+
+  if (length(tpm_L474_ids) != ncol(tpm_L474_nd))
+    stop("check the number of provided IDs and normalised expression data columns")
+
+
+}
+
+
+# add pseudocounts of 0.001
+
+tpm_L474_nd[tpm_L474_nd == 0] <- 0.001
+
+
+min(tpm_L474_nd)
+
+
+# calculate log fold change
+
+# tpm_d23580_nd is a matrix of normalised expression data from Typhimurium D23580
+# the 'normal condition' has SRA id SRR7814100.
+# the FC should therefore be calculated relative to SRR7814100.
+
+
+function_calc_logFC <- function(row_x) {
+
+  log2(row_x[2] / row_x[1])
+
+}
+
+logFC_matrix_L474 <- matrix(, nrow = nrow(tpm_L474_nd), ncol = (ncol(tpm_L474_nd) -1))
+
+rownames(logFC_matrix_L474) <- rownames(tpm_L474_nd)
+colnames(logFC_matrix_L474) <- 2:ncol(tpm_L474_nd)
+
+for (i in 2:ncol(tpm_L474_nd)) {
+
+  cols <- c(1, i)
+
+  j <- i-1
+
+  logFC_matrix_L474[ ,j] <- apply(tpm_L474_nd[, cols], 1, function_calc_logFC)
+
+  colnames(logFC_matrix_L474)[j] <- paste (
+    colnames(tpm_L474_nd)[1],
+    colnames(tpm_L474_nd)[i],
+    sep = "-", collapse = NULL)
+
+
+}
+
+dim(logFC_matrix_L474)
+# -> 30 contrasts for 4521 genes
 
 # Explore functional expression classes -----------------------------------
+
+
+## Library ----------------------------------------------------------------
+
+library(ComplexHeatmap)
+library(circlize)
 
 
 ## Clusters in the D23580 compendium --------------------------------------
 
 compendium_D23580 <- logFC_matrix
+
+compendium_L474 <- logFC_matrix_L474
 
 corM = cor(t(compendium_D23580), y = NULL, use = "pairwise.complete.obs", method = c("pearson"))
 
@@ -162,11 +241,31 @@ dendro <- hclust(dist, method="ward")
 plot(dendro, cex = 0.1, main = "D23580 clusters")
 
 
-# 3. Add cutoff line (i.e expression classes)
+# inspect cutoffs and select
 
 abline(h=4000, col="red")
 
-clusters = cutree(dendro, h=8000)
+clusters = cutree(dendro, h=4000)
+
+col_fun = colorRamp2(c(-1, -0.08, 0, 0.08, 1), c("green", "darkgreen", "black" ,"darkred", "red"))
+
+is.matrix(corM)
+rownames(corM)
+
+ht1 = Heatmap(corM,
+              col = col_fun,
+              name = "Pearson correlation",
+              cluster_rows = dendro,
+              cluster_columns = dendro,
+              show_row_names = FALSE,
+              show_column_names = FALSE,
+              width = unit(10, "cm"),
+              height = unit(10, "cm"),
+              row_split = 5,
+              raster_device = "png",
+              show_row_dend = FALSE)
+
+
 
 
 
@@ -193,7 +292,7 @@ accessions <- read.table(accessionsPath, quote="\"", comment.char="")
 
 accVec <- accessions$V1
 
-# make vector of paths 
+# make vector of paths
 
 files <- file.path(dir, paste0(accVec, "_kallisto"), "abundance.tsv")
 
@@ -259,7 +358,7 @@ for (i in 1:6) {
 for (j in 1:length(unique_allNames)) {
   if (rownames(m1)[j] %in% names(listFC[[i]])) {
     m1[j,i] <- listFC[[i]] [which(names(listFC[[i]]) == rownames(m1)[j])]
- }   
+ }
 }
 }
 
@@ -274,7 +373,7 @@ View(df)
 
 
 
-### !!!! #### nodig: log fold change per pairwise comp 
+### !!!! #### nodig: log fold change per pairwise comp
 
 
 View(res)
@@ -291,7 +390,7 @@ is.matrix(read_counts)
 
 df <- data.frame()
 
-df <- combs1 
+df <- combs1
 
 combsf = cbind(combs1, combs2, combs3, combs4)
 
@@ -343,9 +442,9 @@ nrow(m1)
 ncol(m1)
 nrow(m2)
 ncol(m2)
-          
-          
-          
+
+
+
 corM = cor(t(m2), y = NULL, use = "pairwise.complete.obs", method = c("pearson"))
 View(corM[1:100,1:100])
 
@@ -420,7 +519,7 @@ names(geneList) <- geneNames
 GOdata <- new("topGOdata", ontology = "BP", allGenes = geneList, annot = annFUN.gene2GO, gene2GO = geneID2GO)
 resultFisher <- runTest(GOdata, algorithm = "classic", statistic = "fisher")
 resultSumm <- GenTable(GOdata, classicFisher = resultFisher, topNodes = 20)
-  
+
 # get genes (of test test) for a given overrepresented GO category (here GO:0035556)
 
 allGO <- genesInTerm(GOdata)
@@ -428,20 +527,20 @@ all_genes_in_GO  <- allGO["GO:0035556"]
 final_genes <- all_genes_in_GO[[1]][which(all_genes_in_GO[[1]] %in% names(which(clusters == 1)))]
 
   # 2. Make topGO object
-  
+
   GOdata <- new("topGOdata", ontology = "BP", allGenes = geneList, annot = annFUN.gene2GO, gene2GO = geneID2GO)
-  
+
   # 3. run enrichment test
-  
+
   resultFisher <- runTest(GOdata, algorithm = "classic", statistic = "fisher")
-  
+
   # 4. get summary table
-  
+
   resultSumm = GenTable(GOdata, classicFisher = resultFisher, topNodes = 20)
-  
- 
-  
-  
+
+
+
+
   savePath <- file.path(outputPath, paste(filename, "_GOenrichment", i, ".tab", sep = ""))
   write.table(resultSumm, savePath, sep="\t",row.names=FALSE)
 
@@ -466,17 +565,17 @@ outPath <- file.path("D:/Documenten/PhD/Data/rna-seq")
 
 savePath <- file.path(outPath,paste("heatmapTyphi", ".pdf", sep = ""))
 
-ht1 = Heatmap(corM, 
-              col = col_fun, 
-              name = "Pearson correlation", 
-              cluster_rows = dendro, 
+ht1 = Heatmap(corM,
+              col = col_fun,
+              name = "Pearson correlation",
+              cluster_rows = dendro,
               cluster_columns = dendro,
-              show_row_names = FALSE, 
-              show_column_names = FALSE, 
-              width = unit(10, "cm"), 
-              height = unit(10, "cm"), 
-              #row_split = numberOfClusters, 
-              raster_device = "png", 
+              show_row_names = FALSE,
+              show_column_names = FALSE,
+              width = unit(10, "cm"),
+              height = unit(10, "cm"),
+              #row_split = numberOfClusters,
+              raster_device = "png",
               show_row_dend = FALSE)
 
 
