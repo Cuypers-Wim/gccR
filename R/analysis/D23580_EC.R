@@ -1,6 +1,12 @@
 
 # EC calculations for Typhimurium D23580 ----------------------------------
 
+# Calculate the ...
+
+
+
+# Packages ----------------------------------------------------------------
+
 library(gccR)
 
 # Read data ---------------------------------------------------------------
@@ -41,6 +47,8 @@ library(gccR)
 
 # EC calculation ----------------------------------------------------------
 
+  # EC
+
   corM1 <- get_corM_fast(tpm_14028s_expr, dropNArows = TRUE, threads = 8)
   corM2 <- get_corM_fast(tpm_D23580_expr, dropNArows = TRUE, threads = 8)
 
@@ -48,12 +56,79 @@ library(gccR)
 
   csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2, orthologs)
 
-  EC <- getEC_fast(corM_ortho$csM1, csM2_ordered, 0.001, threads = 1)
+  EC <- getEC_fast(corM_ortho$csM1, csM2_ordered, 0.0001, threads = 1)
 
   EC$ECfinal[EC$ECfinal < -0.49]
 
   EC$ECfinal[EC$ECfinal > 0.58]
 
+  # conserved and diverged distributions
+
+  ## conserved
+
+  splits <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
+                            maxIter = 200, threads = 1, multiple_splits = TRUE,
+                            experiment_info = exprList$headerInfo2, tolerance_thresh = 0.025)
+
+  split_halve <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
+                            maxIter = 200, threads = 1, multiple_splits = FALSE,
+                            experiment_info = exprList$headerInfo2, tolerance_thresh = 0.025)
+
+
+  # make df from list of named vectors (add NA when there is no value for a ID or name)
+
+  library("wrMisc")
+
+  perfect_ec_df <- (t(mergeVectors(splits[[1]], splits[[2]], splits[[3]], splits[[4]],
+                      splits[[5]], splits[[6]], splits[[7]], splits[[8]],
+                      splits[[9]], splits[[10]])))
+
+  # get the mean per gene
+
+  final_perfect_EC <- rowMeans(perfect_ec_df, na.rm = FALSE)
+
+  perfect_EC_median <- apply(perfect_ec_df, 1, median)
+
+  min(final_perfect_EC, na.rm = TRUE)
+  max(final_perfect_EC, na.rm = TRUE)
+
+  min(perfect_EC_median, na.rm = TRUE)
+  max(perfect_EC_median, na.rm = TRUE)
+
+  ## diverged
+
+  random_EC <- read.csv("~/PhD/Data/GitHub/CCR_fast/lt2_14028s_random_EC_NEW.csv")
+
+  nrow(random_EC)
+  length(rownames(corM_ortho$csM1))
+
+  random_EC$id <- rownames(corM_ortho$csM1)
+
+  randomEC_vec <- c()
+  randomEC_vec <- c(random_EC$r_EC)
+  names(randomEC_vec) <- c(random_EC$id)
+
+  # plot distributions
+
+ # distrib_names <- c(rep("EC", length(EC$ECfinal)),
+ #                    rep("diverged", length(randomEC_vec)),
+ #                    rep("conserved", length(final_perfect_EC)))
+
+distrib_names <- c(rep("EC", length(EC$ECfinal)),
+                   rep("diverged", length(randomEC_vec)),
+                   rep("conserved", length(split_halve[[1]])))
+
+ # values <- c(EC$ECfinal, randomEC_vec,final_perfect_EC)
+
+ values <- c(EC$ECfinal, randomEC_vec, split_halve[[1]])
+
+
+ df <- cbind(distrib_names, as.data.frame(values))
+
+ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
+   geom_density() +
+   xlim(-0.8, 1.2) +
+   theme_classic()
 
 # Co-expression - EC heatmap ----------------------------------------------
 
@@ -61,7 +136,7 @@ library(gccR)
 ## heatmap - hclust --------------------------------------------------------
 
   # two corM need to be clustered
-  # d23580 will be 'row-ordered' according to the 14028s compendium, but column-rdered accoding to hclust
+  # d23580 will be 'row-ordered' according to the 14028s compendium, but column-reordered according to hclust
 
   library(ComplexHeatmap)
   library(circlize)
@@ -75,8 +150,32 @@ library(gccR)
   abline(h=1050, col="red")
   # define clusters based on hclust cutoff
 
-  clusters <- cutree(dendro, h = 1050)
-  number_of_cl <- max(clusters)
+  clusters_small <- cutree(dendro, h = 500)
+  number_of_cl <- max(clusters_small)
+
+  # cluster sizes
+
+  for (i in 1:max(clusters_small)) {
+
+    length_cl <- length(clusters_small[which(clusters_small == i)])
+
+    print(paste0("the length of cluster ", i, " is ", length_cl))
+
+  }
+
+  # make a boxplot of the EC values per cluster
+
+  EC_cl_df <- data.frame(clusters_small, EC$ECfinal)
+
+  ggplot(EC_cl_df, aes(x=as.factor(clusters_small), y=EC.ECfinal)) +
+    geom_boxplot()
+
+ # toDo:
+    # voeg naam of functie FEC toe, en geef titel met faceting
+    # voeg lijnen toe met de EC cutoffs
+    # voeg dots toe per meetpunt
+
+  # facet_wrap(~treatment)
 
 
 ### CorM 2 clustering -------------------------------------------------------
@@ -101,10 +200,23 @@ library(gccR)
 
   col_fun = colorRamp2(c(-1, -0.08, 0, 0.08, 1), c("green", "darkgreen", "black" ,"darkred", "red"))
 
+  cluster_color <- c("#a50026",
+    "#d73027",
+    "#f46d43",
+    "#fdae61",
+    "#fee090",
+    "#ffffbf",
+    "#e0f3f8",
+    "#abd9e9",
+    "#74add1",
+    "#4575b4",
+    "#313695")
+
   # checks
 
   is.matrix(corM_ortho$csM1) && is.matrix(csM2_ordered_renamed)
   all(rownames(corM_ortho$csM1) == rownames(csM2_ordered_renamed))
+
 
   #plot
 
@@ -117,7 +229,7 @@ library(gccR)
                 show_column_names = FALSE,
                 width = unit(10, "cm"),
                 height = unit(10, "cm"),
-                row_split = 6,
+                split = 11,
                 raster_device = "png",
                 show_row_dend = FALSE,
                 column_title = "14028s")
@@ -132,7 +244,18 @@ library(gccR)
                 raster_device = "png",
                 column_title = "EC")
 
-  ht3 = Heatmap(csM2_ordered_renamed,
+  ht3 = Heatmap(as.factor(clusters),
+                col = cluster_color,
+                name = "FEC",
+                show_row_names = FALSE,
+                show_column_names = FALSE,
+                cluster_rows = FALSE,
+                cluster_columns = FALSE,
+                width = unit(0.5, "cm"),
+                raster_device = "png",
+                column_title = "FEC")
+
+  ht4 = Heatmap(csM2_ordered_renamed,
                 name = "D23580",
                 col = col_fun,
                 show_row_names = FALSE,
@@ -143,14 +266,17 @@ library(gccR)
                 raster_device = "png",
                 column_title = "D23580")
 
-  final = (ht1 + ht2 + ht3)
+  final = (ht1 + ht2+ ht3 + ht4)
+
+
+
 
   # export heatmap
 
   title <- "D23580_analysis"
   outPath <- "D:/Documenten/PhD/Data/p_expression/typhimurium_D23580/figures"
 
-  savePath <- file.path(outPath,paste(title, "_heatmapEC1", ".pdf", sep = ""))
+  savePath <- file.path(outPath,paste(title, "_heatmapEC2", ".pdf", sep = ""))
 
   pdf(savePath, width = 20, height = 20)
 
@@ -158,56 +284,50 @@ library(gccR)
 
   dev.off()
 
+  citation("parallel")
+
 
 # Functional expression class annotation ----------------------------------
 
-
-## Orthologs only ----------------------------------------------------------
-
-
-  # GO enrichment
-  # T3SS genes
-  # nuccio & Baumler genes anaerobic metabolism
-  # genes identified by wheeler et al.
-  #
-
-  # might be STM annotation and not STM14
-
 ### Gene ontology -----------------------------------------------------------
 
-  BiocManager::install("topGO")
+  # BiocManager::install("topGO")
+  # BiocManager::install("Rgraphviz")
 
   library("topGO")
+  library("Rgraphviz")
 
   goMappingPath <- file.path("D:/Documenten/PhD/Data/p_expression/expression/geneid2go.map") #belangrijk!!
 
   outputPath = file.path("D:/Documenten/PhD/Data/expression/output_final")
   filename = base1
 
-  GO_clusters(dendrogram1sub, goMappingPath, outputPath, filename)
+  # GO_clusters(dendrogram1sub, goMappingPath, outputPath, filename)
 
   # change labels of dendro (so that the labels of the clusters are from LT2, i.e matching GO mapping)
 
   dendro_ortho <- dendro
 
-  i = 1000
+  dendro$labels
 
   length(dendro_ortho$labels)
+
 
   for (i in 1:length(dendro_ortho$labels)) {
 
     row <- which(orthologs_D23580_14028s_LT2[ ,2] == dendro_ortho$labels[i])
 
-    dendro_ortho$labels[i] <- orthologs_D23580_14028s_LT2[i,3]
+    dendro_ortho$labels[i] <- orthologs_D23580_14028s_LT2[row,3]
 
 
   }
 
-  # orthologs_D23580_14028s_LT2
+  # check
+  length(dendro$labels[is.na(dendro_ortho$labels)])
+  # 6 ids are 'NA', these are genes that are found in D23580 and 14028s, but not in LT2
 
-  GO_clusters <- function(dendro, goMappingPath, outputPath, filename) {
 
-    # carries out GO enrichment analysis on a set of genes (clusters)
+    # carry out GO enrichment analysis on a set of genes (clusters)
     #
     # Args:
     #  goMappingPath: path to the custom GO mapping file for topGO
@@ -226,7 +346,10 @@ library(gccR)
 
     # 2. initialise test set (gene cluster)
 
-    clusters <- cutree(dendro_ortho, h = 1050)
+    # plot(dendro_ortho)
+    # abline(h=500, col="red")
+
+    clusters <- cutree(dendro_ortho, h = 500)
     numberOfClusters = max(clusters)
 
     resultSumm_list <- vector(mode = "list", length = numberOfClusters)
@@ -239,7 +362,9 @@ library(gccR)
 
       # 2. Make topGO object
 
-      GOdata <- new("topGOdata", ontology = "BP", allGenes = geneList, annot = annFUN.gene2GO, gene2GO = geneID2GO)
+      GOdata <- new("topGOdata", ontology = "BP", allGenes = geneList,
+                    nodeSize = 10,
+                    annot = annFUN.gene2GO, gene2GO = geneID2GO)
 
       # 3. run enrichment test
 
@@ -247,13 +372,45 @@ library(gccR)
 
       # 4. get summary table
 
-      resultSumm_list[[i]] <- GenTable(GOdata, classicFisher = resultFisher, topNodes = 50)
+      resultSumm_list[[i]] <- GenTable(GOdata, classicFisher = resultFisher, topNodes = 50, numChar = 1000)
 
+      # showSigOfNodes(GOdata, score(resultKS.elim), firstSigNodes = 5, useInfo = 'all')
       # savePath <- file.path(outputPath, paste(filename, "_GOenrichment", i, ".tab", sep = ""))
       # write.table(resultSumm, savePath, sep="\t",row.names=FALSE)
     }
 
   }
+
+
+  savePath <- file.path("D:/Documenten/PhD/Data/GitHub/gccR/results/go_cluster14028s")
+
+  for (i in 1:length(resultSumm_list)) {
+
+    filename <- paste0(savePath, "_cl_", i)
+    write.table(resultSumm_list[[i]], filename, sep="\t",row.names=FALSE)
+
+    }
+
+
+  cluster_df <- data.frame(keyName=names(clusters), value=clusters, row.names=NULL)
+
+
+    filename <- paste0(savePath, "_genes_per_cluster")
+    write.table(cluster_df, filename, sep="\t",row.names=FALSE)
+
+
+
+
+## Specialised annotation --------------------------------------------------
+
+    # T3SS genes
+    # nuccio & Baumler genes anaerobic metabolism
+    # genes identified by wheeler et al.
+    #
+    # might be STM annotation and not STM14
+
+
+
 
 
 

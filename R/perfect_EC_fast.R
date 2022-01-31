@@ -61,6 +61,10 @@ perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
   
   exprM <- exprM[which(rownames(exprM) %in% rownames(labelsM)), ]
   
+  # unlist experiment info
+  
+  experiments_all <- unlist(experiment_info["Experiment_id", ])
+  
   # multiple splits or single
   
   if (multiple_splits == TRUE) {
@@ -71,7 +75,7 @@ perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
     exp_combos_list <- vector(mode = "list", length = 10)
     EC_list <- vector(mode = "list", length = 10)
     
-    experiments_all <- unlist(experiment_info["Experiment_id", ])
+   
     unique_experiment_ids <- unique(unlist(experiment_info["Experiment_id", ]))
     expression_cols <- colnames(experiment_info)
     
