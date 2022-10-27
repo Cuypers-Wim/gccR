@@ -60,5 +60,5 @@ randomEC1 <- divergedEC(exprList$exprValues2, csM2_ordered, singleCopyOrthologs,
 
 # Credits
   Adapted from:
-    -Sonego P. et al. (2015) 
-    -Meysman P. et al. (2013)
+ - Sonego P. et al. (2015) 
+ - Meysman P. et al. (2013)
