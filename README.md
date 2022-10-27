@@ -6,7 +6,7 @@ gene co-expression conservation calculations in R
 - Expression conservation (EC) calculations between two gene expression compendia
 - Identification and analysis of functional expression classes (FECs)
 
-## Installation
+# Installation
 
 ``` r
 # Installation is currently only possible via the development version from GitHub:
@@ -14,7 +14,7 @@ gene co-expression conservation calculations in R
 devtools::install_github("Cuypers-Wim/CCR")
 ```
 
-## Example usage
+# Example usage
 
 ```R
 library(CCR)
@@ -58,7 +58,7 @@ randomEC1 <- divergedEC(exprList$exprValues2, csM2_ordered, singleCopyOrthologs,
 
 ```
 
-## Credits
+# Credits
   Adapted from:
-    -- Sonego P. et al. (2015) 
-    -- Meysman P. et al. (2013)
+    -Sonego P. et al. (2015) 
+    -Meysman P. et al. (2013)
