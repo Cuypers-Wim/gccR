@@ -11,13 +11,13 @@ gene co-expression conservation calculations in R
 ``` r
 # Installation is currently only possible via the development version from GitHub:
 # install.packages("devtools", auth_token="GHkeyHere")
-devtools::install_github("Cuypers-Wim/CCR")
+devtools::install_github("Cuypers-Wim/gccR")
 ```
 
 # Example usage
 
 ```R
-library(CCR)
+library(gccR)
 
 # path to two gene expression datasets (e.g downloaded from COLOMBOS.net) that you wish to compare
 
