@@ -10,7 +10,6 @@ gene co-expression conservation calculations in R
 
 ``` r
 # Installation is currently only possible via the development version from GitHub:
-# install.packages("devtools", auth_token="GHkeyHere")
 devtools::install_github("Cuypers-Wim/gccR")
 ```
 
