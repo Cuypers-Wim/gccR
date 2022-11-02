@@ -28,7 +28,11 @@ library(gccR)
 
 ## D23580 ------------------------------------------------------------------
 
+  # Check first in editor whether "ID" is included in the file.
+  # If not, add this to avoid wrong column naming
+
   tpm_D23580_expr <- read.delim("~/PhD/Data/p_expression/typhimurium_D23580/compendium/D23580_expr.txt")
+
   rownames(tpm_D23580_expr) <- tpm_D23580_expr[ ,1]
   tpm_D23580_expr <- tpm_D23580_expr[ ,-1]
 
@@ -44,7 +48,6 @@ library(gccR)
 
   # View(tpm_14028s_expr)
 
-
 # EC calculation ----------------------------------------------------------
 
   # EC
@@ -58,42 +61,56 @@ library(gccR)
 
   EC <- getEC_fast(corM_ortho$csM1, csM2_ordered, 0.0001, threads = 1)
 
-  EC$ECfinal[EC$ECfinal < -0.49]
-
-  EC$ECfinal[EC$ECfinal > 0.58]
+  summary(EC$ECfinal)
 
   # conserved and diverged distributions
 
   ## conserved
 
   splits <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
-                            maxIter = 200, threads = 1, multiple_splits = TRUE,
-                            experiment_info = exprList$headerInfo2, tolerance_thresh = 0.025)
+                            maxIter = 200, threads = 1, splits = 30,
+                            experiment_info = exprList$headerInfo2, tolerance_thresh = 0.25)
 
   split_halve <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
-                            maxIter = 200, threads = 1, multiple_splits = FALSE,
-                            experiment_info = exprList$headerInfo2, tolerance_thresh = 0.025)
+                            maxIter = 200, threads = 1, experiment_info = exprList$headerInfo2, tolerance_thresh = 0.025)
 
 
-  # make df from list of named vectors (add NA when there is no value for a ID or name)
+  summary(splits$ECfinal)
 
-  library("wrMisc")
+  # EC critical value based on perfect distribution == min(splits$ECfinal, na.rm = TRUE) (-0.38 in this case)
+  # truly diverged genes:
 
-  perfect_ec_df <- (t(mergeVectors(splits[[1]], splits[[2]], splits[[3]], splits[[4]],
-                      splits[[5]], splits[[6]], splits[[7]], splits[[8]],
-                      splits[[9]], splits[[10]])))
+  diverged_genes_vec <- EC$ECfinal[EC$ECfinal < -0.38]
+  length(diverged_genes_vec)
 
-  # get the mean per gene
+  # inspect plot
 
-  final_perfect_EC <- rowMeans(perfect_ec_df, na.rm = FALSE)
+  splits$split_plot
 
-  perfect_EC_median <- apply(perfect_ec_df, 1, median)
+  # write genes and EC to table
 
-  min(final_perfect_EC, na.rm = TRUE)
-  max(final_perfect_EC, na.rm = TRUE)
+  df <- data.frame(EC$ECfinal[EC$ECfinal < -0.38])
 
-  min(perfect_EC_median, na.rm = TRUE)
-  max(perfect_EC_median, na.rm = TRUE)
+  write.table(df, file = "~/PhD/Data/p_expression/typhimurium_D23580/diverged.csv", append = FALSE, sep = "\t", dec = ".")
+
+
+  # perform GO enrichment on these genes
+
+    # custom mappings generated using gaf file and custom python script
+    # were put in the 'example' folder of the package
+
+  goMappingPath <- file.path("D:/Documenten/PhD/Data/p_expression/expression/geneid2go.map")
+  output_path = file.path("D:/Documenten/PhD/Data/p_expression/go_D23580")
+  goFilename <- "diverged_genes_D23580_GO"
+
+  # we need to change the ids to LT2 IDs
+
+  myInterestingGenes_D23580 <- names(diverged_genes_vec)
+  myInterestingGenes <- orthologs_D23580_14028s_LT2[orthologs_D23580_14028s_LT2[ ,2] %in% myInterestingGenes_D23580,3]
+
+  go_enrichment <- topGO_salmonella(goMappingPath, output_path,
+                                    filename = goFilename, myInterestingGenes)
+
 
   ## diverged
 
