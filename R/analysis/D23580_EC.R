@@ -26,6 +26,12 @@ library(gccR)
 
   orthologs <- D23580_14028s_orthologs[(!is.na(D23580_14028s_orthologs[ ,2])), ]
 
+  # get the number of orthologs identified
+
+  orthologs_true <- orthologs[(!is.na(orthologs[ ,1])), ]
+
+  nrow(orthologs_true)
+
 ## D23580 ------------------------------------------------------------------
 
   # Check first in editor whether "ID" is included in the file.
@@ -50,7 +56,7 @@ library(gccR)
 
 # EC calculation ----------------------------------------------------------
 
-  # EC
+  ## EC ----------------------------------------------------------------------
 
   corM1 <- get_corM_fast(tpm_14028s_expr, dropNArows = TRUE, threads = 8)
   corM2 <- get_corM_fast(tpm_D23580_expr, dropNArows = TRUE, threads = 8)
@@ -63,86 +69,111 @@ library(gccR)
 
   summary(EC$ECfinal)
 
-  # conserved and diverged distributions
-
-  ## conserved
-
-  splits <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
-                            maxIter = 200, threads = 1, splits = 30,
-                            experiment_info = exprList$headerInfo2, tolerance_thresh = 0.25)
-
-  split_halve <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
-                            maxIter = 200, threads = 1, experiment_info = exprList$headerInfo2, tolerance_thresh = 0.025)
+  length(EC$ECfinal)
 
 
-  summary(splits$ECfinal)
+  ## EC and divergence -------------------------------------------------------
 
-  # EC critical value based on perfect distribution == min(splits$ECfinal, na.rm = TRUE) (-0.38 in this case)
-  # truly diverged genes:
-
-  diverged_genes_vec <- EC$ECfinal[EC$ECfinal < -0.38]
-  length(diverged_genes_vec)
-
-  # inspect plot
-
-  splits$split_plot
-
-  # write genes and EC to table
-
-  df <- data.frame(EC$ECfinal[EC$ECfinal < -0.38])
-
-  write.table(df, file = "~/PhD/Data/p_expression/typhimurium_D23580/diverged.csv", append = FALSE, sep = "\t", dec = ".")
+  # calculate conserved and diverged distributions and
+  # use the min and max values to identify truly diverged and conserved genes
 
 
-  # perform GO enrichment on these genes
+    ### Diverged ----------------------------------------------------------------
 
-    # custom mappings generated using gaf file and custom python script
-    # were put in the 'example' folder of the package
+    splits <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
+                              maxIter = 200, threads = 1, splits = 30,
+                              experiment_info = exprList$headerInfo2, tolerance_thresh = 0.25)
 
-  goMappingPath <- file.path("D:/Documenten/PhD/Data/p_expression/expression/geneid2go.map")
-  output_path = file.path("D:/Documenten/PhD/Data/p_expression/go_D23580")
-  goFilename <- "diverged_genes_D23580_GO"
-
-  # we need to change the ids to LT2 IDs
-
-  myInterestingGenes_D23580 <- names(diverged_genes_vec)
-  myInterestingGenes <- orthologs_D23580_14028s_LT2[orthologs_D23580_14028s_LT2[ ,2] %in% myInterestingGenes_D23580,3]
-
-  go_enrichment <- topGO_salmonella(goMappingPath, output_path,
-                                    filename = goFilename, myInterestingGenes)
+    split_halve <- perfect_EC_fast(exprM = exprList$exprValues2, labelsM = corM_ortho$csM1, conv = 0.001,
+                              maxIter = 200, threads = 1, experiment_info = exprList$headerInfo2, tolerance_thresh = 0.025)
 
 
-  ## diverged
+    summary(splits$ECfinal)
 
-  random_EC <- read.csv("~/PhD/Data/GitHub/CCR_fast/lt2_14028s_random_EC_NEW.csv")
+    # EC critical value based on perfect distribution == min(splits$ECfinal, na.rm = TRUE) (-0.38 in this case)
+    # truly diverged genes:
 
-  nrow(random_EC)
-  length(rownames(corM_ortho$csM1))
+    diverged_genes_vec <- EC$ECfinal[EC$ECfinal < -0.35]
+    length(diverged_genes_vec)
 
-  random_EC$id <- rownames(corM_ortho$csM1)
+    # write genes and EC to table
 
-  randomEC_vec <- c()
-  randomEC_vec <- c(random_EC$r_EC)
-  names(randomEC_vec) <- c(random_EC$id)
+    df <- data.frame(EC$ECfinal[EC$ECfinal < -0.35])
 
-  # plot distributions
+    write.table(df, file = "~/PhD/Data/p_expression/typhimurium_D23580/diverged.csv", append = FALSE, sep = "\t", dec = ".")
 
- # distrib_names <- c(rep("EC", length(EC$ECfinal)),
- #                    rep("diverged", length(randomEC_vec)),
- #                    rep("conserved", length(final_perfect_EC)))
+
+    # perform GO enrichment on these genes
+
+      # custom mappings generated using gaf file and custom python script
+      # were put in the 'example' folder of the package
+
+    goMappingPath <- file.path("D:/Documenten/PhD/Data/p_expression/expression/geneid2go.map")
+    output_path = file.path("D:/Documenten/PhD/Data/p_expression/go_D23580")
+    goFilename <- "diverged_genes_D23580_GO"
+
+    # we need to change the ids to LT2 IDs
+
+    myInterestingGenes_D23580 <- names(diverged_genes_vec)
+    myInterestingGenes <- orthologs_D23580_14028s_LT2[orthologs_D23580_14028s_LT2[ ,2] %in% myInterestingGenes_D23580,3]
+
+    go_enrichment <- topGO_salmonella(goMappingPath, output_path,
+                                      filename = goFilename, myInterestingGenes, top_nodes = 40)
+
+    ### Plot perfect EC splits + variance  -----------------------------------------
+
+    # plot of all perfect distributions per split
+
+    splits$split_plot
+
+    # plot of the variance
+
+    ec_variance_df <- cbind(splits$ECfinal, splits$variance)
+    colnames(ec_variance_df) <- c("mean_EC_value","variance")
+
+    library(ggplot2)
+    ggplot(ec_variance_df, aes(x = mean_EC_value, y = variance)) +
+      geom_point()
+
+    plot(x=ec_variance_df[ , "mean_EC_value"],
+         y=ec_variance_df[ , "variance"],
+         xlab="Mean EC value", ylab="variance",
+         main="EC versus variance")
+
+
+    ### Conserved ---------------------------------------------------------------
+
+    random_EC <- read.csv("~/PhD/Data/GitHub/CCR_fast/lt2_14028s_random_EC_NEW.csv")
+
+    summary(random_EC)
+
+    conserved_genes_vec <- EC$ECfinal[EC$ECfinal > 0.58  ]
+    length(conserved_genes_vec)
+
+    genenames_D23580 <- names(conserved_genes_vec)
+
+    myInterestingGenes_conserved <- orthologs_D23580_14028s_LT2[orthologs_D23580_14028s_LT2[ ,2] %in% genenames_D23580,3]
+
+    go_enrichment_conserved <- topGO_salmonella(goMappingPath, output_path,
+                                      filename = "conserved_genes_go", myInterestingGenes = myInterestingGenes_conserved, top_nodes = 40)
+
+
+    randomEC_vec <- c()
+    randomEC_vec <- random_EC$r_EC
+    names(randomEC_vec) <- random_EC$id
+
+# Plot EC, conserved and diverged distributions --------------------------------
+
 
 distrib_names <- c(rep("EC", length(EC$ECfinal)),
                    rep("diverged", length(randomEC_vec)),
-                   rep("conserved", length(split_halve[[1]])))
+                   rep("conserved", length(splits$ECfinal)))
 
- # values <- c(EC$ECfinal, randomEC_vec,final_perfect_EC)
+values <- c(EC$ECfinal, randomEC_vec, splits$ECfinal)
 
- values <- c(EC$ECfinal, randomEC_vec, split_halve[[1]])
+df <- cbind(distrib_names, as.data.frame(values))
 
-
- df <- cbind(distrib_names, as.data.frame(values))
-
- p <- ggplot(df, aes(x=values, colour=distrib_names)) +
+p <- ggplot(df, aes(x=values, colour=distrib_names)) +
    geom_density() +
    xlim(-0.8, 1.2) +
    theme_classic()
@@ -160,14 +191,26 @@ distrib_names <- c(rep("EC", length(EC$ECfinal)),
 
 ### CorM 1 clustering -------------------------------------------------------
 
-  dist = dist(corM_ortho$csM1, method = "euclidian")
+system.time(dist <- dist(corM_ortho$csM1, method = "euclidian"))
+
+# user  system elapsed
+# 534.06    0.38  540.08
+
+library(parallelDist)
+
+system.time(distPar <- parDist(corM_ortho$csM1, method = "euclidean", threads = 8))
+
+# user  system elapsed
+# 1345.42    4.61  220.62
+
+
   dendro <- hclust(dist, method="ward")
 
   plot(dendro)
   abline(h=1050, col="red")
   # define clusters based on hclust cutoff
 
-  clusters_small <- cutree(dendro, h = 500)
+  clusters_small <- cutree(dendro, h = 1050)
   number_of_cl <- max(clusters_small)
 
   # cluster sizes
@@ -185,7 +228,9 @@ distrib_names <- c(rep("EC", length(EC$ECfinal)),
   EC_cl_df <- data.frame(clusters_small, EC$ECfinal)
 
   ggplot(EC_cl_df, aes(x=as.factor(clusters_small), y=EC.ECfinal)) +
-    geom_boxplot()
+    geom_boxplot() +
+    theme_classic() +
+    labs(y = "EC", x = "Functional expression class")
 
  # toDo:
     # voeg naam of functie FEC toe, en geef titel met faceting
@@ -217,17 +262,14 @@ distrib_names <- c(rep("EC", length(EC$ECfinal)),
 
   col_fun = colorRamp2(c(-1, -0.08, 0, 0.08, 1), c("green", "darkgreen", "black" ,"darkred", "red"))
 
-  cluster_color <- c("#a50026",
-    "#d73027",
-    "#f46d43",
-    "#fdae61",
-    "#fee090",
-    "#ffffbf",
-    "#e0f3f8",
-    "#abd9e9",
-    "#74add1",
-    "#4575b4",
-    "#313695")
+  cluster_color <- c("#d53e4f",
+    "#fc8d59",
+    "#fee08b",
+    "#e6f598",
+    "#99d594",
+    "#3288bd")
+
+  names(cluster_color) <- c("1","2","3","4","5","6")
 
   # checks
 
@@ -246,10 +288,11 @@ distrib_names <- c(rep("EC", length(EC$ECfinal)),
                 show_column_names = FALSE,
                 width = unit(10, "cm"),
                 height = unit(10, "cm"),
-                split = 11,
+                split = number_of_cl,
                 raster_device = "png",
                 show_row_dend = FALSE,
-                column_title = "14028s")
+                column_title = "14028s",
+                right_annotation = ha)
 
   ht2 = Heatmap(EC$ECfinal,
                 name = "EC",
@@ -261,7 +304,7 @@ distrib_names <- c(rep("EC", length(EC$ECfinal)),
                 raster_device = "png",
                 column_title = "EC")
 
-  ht3 = Heatmap(as.factor(clusters),
+  ht3 = Heatmap(as.factor(clusters_small),
                 col = cluster_color,
                 name = "FEC",
                 show_row_names = FALSE,
@@ -283,9 +326,9 @@ distrib_names <- c(rep("EC", length(EC$ECfinal)),
                 raster_device = "png",
                 column_title = "D23580")
 
+  final = (ht1 + ht2+ ht3)
+
   final = (ht1 + ht2+ ht3 + ht4)
-
-
 
 
   # export heatmap
@@ -418,12 +461,19 @@ distrib_names <- c(rep("EC", length(EC$ECfinal)),
 
 
 
-## Specialised annotation --------------------------------------------------
+# Specialised annotation --------------------------------------------------
 
-    # T3SS genes
-    # nuccio & Baumler genes anaerobic metabolism
-    # genes identified by wheeler et al.
-    #
+## T3SS genes --------------------------------------------------------------
+
+    T3SS1_TyhpimuriumGenes <- read.table("~/PhD/Data/sp_T3SS/SPI1_IDs.txt", quote="\"", comment.char="")
+    T3SS2_TyhpimuriumGenes <- read.table("~/PhD/Data/sp_T3SS/SPI2_IDs.txt", quote="\"", comment.char="")
+
+## Anaerobic metabolism genes (nuccio & baumler) ---------------------------
+
+
+
+# Host adaptation genes (Wheeler et al.) ----------------------------------
+
     # might be STM annotation and not STM14
 
 

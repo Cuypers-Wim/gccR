@@ -50,7 +50,7 @@ topGO_salmonella <- function(goMappingPath = "examples/typhimurium_geneid2go.map
   # get stats and write output
 
   resultFisher <- runTest(GOdata, algorithm = "classic", statistic = "fisher")
-  resultSumm = GenTable(GOdata, classicFisher = resultFisher, topNodes = top_nodes)
+  resultSumm = GenTable(GOdata, classicFisher = resultFisher, topNodes = top_nodes, orderBy = "classicFisher")
 
   write.table(resultSumm, outputPath, sep="\t",row.names=FALSE)
 

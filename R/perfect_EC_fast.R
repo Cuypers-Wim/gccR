@@ -79,8 +79,8 @@ perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
     # preallocate #
 
     exp_sizes_vec <- vector(length = ncol(exprM))
-    exp_combos_list <- vector(mode = "list", length = 10)
-    EC_list <- vector(mode = "list", length = 10)
+    exp_combos_list <- vector(mode = "list", length = splits)
+    EC_list <- vector(mode = "list", length = splits)
 
 
     unique_experiment_ids <- unique(unlist(experiment_info["Experiment_id", ]))
@@ -121,9 +121,9 @@ perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
     EC_list <- mclapply(exp_combos_list, function_ec_subset, exprM, labelsM, mc.cores = threads)
 
     # add list item with the mean EC value* per gene
-    # (*) the mean of the EC values calculated for each of the 10 splits
+    # (*) the mean of the EC values calculated for each of the splits
 
-    # make a data frame first with all 10 values per gene
+    # make a data frame first with all values per gene per split
 
     perfect_ec_df <- as.data.frame(do.call(cbind, EC_list))
 
@@ -138,15 +138,13 @@ perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
 
     EC_list$split_plot <- p
 
-    # get the mean per gene
+    # get the mean per gene and add it to the list
 
-    mean_perfect_EC_vec <- rowMeans(perfect_ec_df, na.rm = FALSE)
+    EC_list$ECfinal <- rowMeans(perfect_ec_df, na.rm = FALSE)
 
-    # and add it to the list
+    # get the variance per row and add it to the list
 
-    EC_list$ECfinal <- mean_perfect_EC_vec
-
-
+    EC_list$variance <- apply(perfect_ec_df, 1, var)
 
   } # end if 'multiple splits = TRUE'
 
