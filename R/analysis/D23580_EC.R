@@ -44,6 +44,14 @@ library(gccR)
 
   # View(tpm_D23580_expr)
 
+
+
+## strain 4/74 (from the same study as D23580) ------------------------------
+
+  tpm_474_expr <- read.delim("D:/Documenten/PhD/Data/p_expression/typhimurium_D23580/compendium/L474_expr.txt")
+
+  ncol(tpm_474_expr)
+
 ## 14028s ------------------------------------------------------------------
 
   dataset1 <- file.path("~/PhD/Data/p_expression/COLOMBOS/exprData/Jan2020/colombos_sente_lt2_exprdata_20151029.txt")
@@ -102,6 +110,7 @@ library(gccR)
 
     write.table(df, file = "~/PhD/Data/p_expression/typhimurium_D23580/diverged.csv", append = FALSE, sep = "\t", dec = ".")
 
+    read.table(file = "~/PhD/Data/p_expression/typhimurium_D23580/diverged.csv")
 
     # perform GO enrichment on these genes
 
@@ -191,18 +200,7 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
 
 ### CorM 1 clustering -------------------------------------------------------
 
-system.time(dist <- dist(corM_ortho$csM1, method = "euclidian"))
-
-# user  system elapsed
-# 534.06    0.38  540.08
-
-library(parallelDist)
-
-system.time(distPar <- parDist(corM_ortho$csM1, method = "euclidean", threads = 8))
-
-# user  system elapsed
-# 1345.42    4.61  220.62
-
+  dist <- dist(corM_ortho$csM1, method = "euclidian")
 
   dendro <- hclust(dist, method="ward")
 
@@ -291,8 +289,7 @@ system.time(distPar <- parDist(corM_ortho$csM1, method = "euclidean", threads = 
                 split = number_of_cl,
                 raster_device = "png",
                 show_row_dend = FALSE,
-                column_title = "14028s",
-                right_annotation = ha)
+                column_title = "14028s")
 
   ht2 = Heatmap(EC$ECfinal,
                 name = "EC",
@@ -351,16 +348,21 @@ system.time(distPar <- parDist(corM_ortho$csM1, method = "euclidean", threads = 
 
 ### Gene ontology -----------------------------------------------------------
 
-  # BiocManager::install("topGO")
-  # BiocManager::install("Rgraphviz")
-
-  library("topGO")
-  library("Rgraphviz")
+  # GO enrichment on functional expression classes (FECls)
 
   goMappingPath <- file.path("D:/Documenten/PhD/Data/p_expression/expression/geneid2go.map") #belangrijk!!
 
   outputPath = file.path("D:/Documenten/PhD/Data/expression/output_final")
-  filename = base1
+
+  fecl_n
+
+  for (i in 1:max()) {
+
+  go_fecls <- topGO_salmonella(goMappingPath, output_path = outputPath,
+                                              filename = "go_fecls",
+                               myInterestingGenes = fecl_n,
+                               top_nodes = 20)
+
 
   # GO_clusters(dendrogram1sub, goMappingPath, outputPath, filename)
 
@@ -384,6 +386,7 @@ system.time(distPar <- parDist(corM_ortho$csM1, method = "euclidean", threads = 
 
   # check
   length(dendro$labels[is.na(dendro_ortho$labels)])
+
   # 6 ids are 'NA', these are genes that are found in D23580 and 14028s, but not in LT2
 
 
@@ -459,25 +462,121 @@ system.time(distPar <- parDist(corM_ortho$csM1, method = "euclidean", threads = 
     write.table(cluster_df, filename, sep="\t",row.names=FALSE)
 
 
-
-
 # Specialised annotation --------------------------------------------------
+
+    clusters_small
 
 ## T3SS genes --------------------------------------------------------------
 
-    T3SS1_TyhpimuriumGenes <- read.table("~/PhD/Data/sp_T3SS/SPI1_IDs.txt", quote="\"", comment.char="")
-    T3SS2_TyhpimuriumGenes <- read.table("~/PhD/Data/sp_T3SS/SPI2_IDs.txt", quote="\"", comment.char="")
+    ids_T3SS1_df <- read.table("~/PhD/Data/sp_T3SS/SPI1_IDs.txt", quote="\"", comment.char="")
+    ids_T3SS2_df <- read.table("~/PhD/Data/sp_T3SS/SPI2_IDs.txt", quote="\"", comment.char="")
+
+    ids_T3SS1_vec <- ids_T3SS1_df[ ,1]
+    ids_T3SS2_vec <- ids_T3SS2_df[ ,1]
 
 ## Anaerobic metabolism genes (nuccio & baumler) ---------------------------
 
+    ids_anaerobic_df <- read.table("~/PhD/Data/GitHub/concord/invasiveness/gene_ids_anaerobic_n&b.txt", quote="\"", comment.char="")
+    ids_anaerobic_vec <- ids_anaerobic_df[ ,1]
+
+## Host adaptation genes (Wheeler et al.) ----------------------------------
+
+    # all but 6 genes have a STM identifier
+
+    ids_wheeler2018_df <- read.table("~/PhD/Data/GitHub/concord/invasiveness/topgenes_wheeler2018.txt", quote="\"", comment.char="")
+    ids_wheeler2018_vec <- ids_wheeler2018_df[ ,1]
+
+## make binary annotation matrix
+
+    # get names core submatrix and change 14028s IDs to LT2 IDs
+
+    allNames_vec <- orthologs_D23580_14028s_LT2[names(EC$ECfinal) %in% orthologs_D23580_14028s_LT2[ ,2] , 3]
+
+    # preallocae matrix for binary values
+
+    nrows <- length(allNames_vec)
+
+    binary_anno_matrix <- matrix(0, ncol = 4, nrow = nrows)
+    colnames(binary_anno_matrix) <- c("T3SS1", "T3SS2", "Anaerobic", "Extraintestinal")
+    rownames(binary_anno_matrix) <- allNames_vec
 
 
-# Host adaptation genes (Wheeler et al.) ----------------------------------
+    for (i in 1:length(allNamesVec)) {
+      if (allNamesVec[i] %in% ids_T3SS1_vec) {
+        binary_anno_matrix[i, 1] <- 1
+      }
+      else if (allNamesVec[i] %in% ids_T3SS2_vec) {
+        binary_anno_matrix[i, 2] <- 1
+      }
+      else if (allNamesVec[i] %in% ids_anaerobic_vec) {
+        binary_anno_matrix[i, 3] <- 1
+      }
+      else if (allNamesVec[i] %in% ids_wheeler2018_vec) {
+        binary_anno_matrix[i, 4] <- 1
+      }
 
-    # might be STM annotation and not STM14
+      } # end of for loop
+
+    # replace by STM14 identifiers and rmeove NA
+
+    stm14rownames <- orthologs_D23580_14028s_LT2[rownames(binary_anno_matrix) %in% orthologs_D23580_14028s_LT2[ ,3] , 2]
+
+    rownames(binary_anno_matrix) <- stm14rownames
+
+    ba_fmatrix <- binary_anno_matrix[!is.na(rownames(binary_anno_matrix)), ]
+
+    ba_fmatrix <- ba_fmatrix[rownames(ba_fmatrix) %in% names(EC$ECfinal), ]
+
+    # binary_anno_matrix can now be added to the complex heatmap
+
+    # problem, the binary matrix has STM IDs, while the other components of the heatmap have STM14 IDs
+
+    ht4 = Heatmap(as.factor(ba_fmatrix[ ,1]),
+                  col = c("0" = "#f1f1f1", "1" = "#a6cee3"),
+                  name = "T3SS1",
+                  show_row_names = FALSE,
+                  show_column_names = FALSE,
+                  cluster_rows = FALSE,
+                  width = unit(0.5, "cm"),
+                  raster_device = "png")
+    ht5 = Heatmap(as.factor(ba_fmatrix[ ,2]),
+                  col = c("0" = "#f1f1f1", "1" = "#1f78b4"),
+                  name = "T3SS2",
+                  show_row_names = FALSE,
+                  show_column_names = FALSE,
+                  cluster_rows = FALSE,
+                  width = unit(0.5, "cm"),
+                  raster_device = "png")
+    ht6 = Heatmap(as.factor(ba_fmatrix[ ,3]),
+                  col = c("0" = "#f1f1f1", "1" = "#b2df8a"),
+                  name = "Anaerobic",
+                  show_row_names = FALSE,
+                  show_column_names = FALSE,
+                  cluster_rows = FALSE,
+                  width = unit(0.5, "cm"),
+                  raster_device = "png")
+    ht7 = Heatmap(as.factor(ba_fmatrix[ , 4]),
+                  col = c("0" = "#f1f1f1", "1" = "#33a02c"),
+                  name = "Extraintestinal",
+                  show_row_names = FALSE,
+                  show_column_names = FALSE,
+                  cluster_rows = FALSE,
+                  width = unit(0.5, "cm"),
+                  raster_device = "png")
 
 
 
+    final = (ht1 + ht2+ ht3 + ht4 + ht5 + ht6 + ht7)
+
+
+    # test whether T3SS is in different lcusters indeed
+
+    ids_T3SS1_vec
+    ids_T3SS2_vec
+
+
+
+    orthologs_D23580_14028s_LT2[names(clusters_small) %in% orthologs_D23580_14028s_LT2[ ,2] , 3]
 
 
 

@@ -180,9 +180,7 @@ min(tpm_L474_nd)
 
 # calculate log fold change
 
-# tpm_d23580_nd is a matrix of normalised expression data from Typhimurium D23580
-# the 'normal condition' has SRA id SRR7814100.
-# the FC should therefore be calculated relative to SRR7814100.
+# calculated relative to SRR7814133
 
 
 function_calc_logFC <- function(row_x) {
