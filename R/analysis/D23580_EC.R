@@ -79,6 +79,8 @@ library(gccR)
 
   length(EC$ECfinal)
 
+  # shapiro.test(EC$ECfinal) -> not normally distributed
+
 
   ## EC and divergence -------------------------------------------------------
 
@@ -205,10 +207,11 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
   dendro <- hclust(dist, method="ward")
 
   plot(dendro)
-  abline(h=1050, col="red")
+  abline(h=600, col="darkred")
   # define clusters based on hclust cutoff
 
-  clusters_small <- cutree(dendro, h = 1050)
+  superClusters <- cutree(dendro, h = 2500)
+  clusters_small <- cutree(dendro, h = 600)
   number_of_cl <- max(clusters_small)
 
   # cluster sizes
@@ -229,6 +232,17 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
     geom_boxplot() +
     theme_classic() +
     labs(y = "EC", x = "Functional expression class")
+
+
+  ggplot(EC_cl_df, aes(x=as.factor(clusters_small), y=EC.ECfinal)) +
+    geom_violin() +
+    geom_boxplot(width=0.2, fill="white") +
+    theme_classic() +
+    labs(y = "EC", x = "Functional expression class") +
+    geom_hline(yintercept=0.58, linetype="dashed", color = "darkgreen") +
+    geom_hline(yintercept=-0.35, linetype="dashed", color = "darkred")
+
+
 
  # toDo:
     # voeg naam of functie FEC toe, en geef titel met faceting
@@ -260,14 +274,19 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
 
   col_fun = colorRamp2(c(-1, -0.08, 0, 0.08, 1), c("green", "darkgreen", "black" ,"darkred", "red"))
 
-  cluster_color <- c("#d53e4f",
-    "#fc8d59",
-    "#fee08b",
-    "#e6f598",
-    "#99d594",
-    "#3288bd")
+  # palette from https://medialab.github.io/iwanthue/
+  cluster_color <- c("#36dee6",
+                      "#a27f38",
+                      "#9750a1",
+                      "#65913a",
+                      "#ba496b",
+                      "#6bc66f",
+                      "#6777cf",
+                      "#bb5437",
+                      "#45bc8d",
+                      "#c6a83e")
 
-  names(cluster_color) <- c("1","2","3","4","5","6")
+  names(cluster_color) <- c("1","2","3","4","5","6","7","8","9", "10")
 
   # checks
 
@@ -286,7 +305,10 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
                 show_column_names = FALSE,
                 width = unit(10, "cm"),
                 height = unit(10, "cm"),
-                split = number_of_cl,
+                row_split = max(clusters_small),
+                column_split = max(superClusters),
+                row_gap = unit(0.5, "mm"),
+                column_gap = unit(0.5, "mm"),
                 raster_device = "png",
                 show_row_dend = FALSE,
                 column_title = "14028s")
@@ -312,16 +334,15 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
                 raster_device = "png",
                 column_title = "FEC")
 
-  ht4 = Heatmap(csM2_ordered_renamed,
-                name = "D23580",
-                col = col_fun,
+  ht4 = Heatmap(as.factor(superClusters),
+                name = "Cluster",
                 show_row_names = FALSE,
                 show_column_names = FALSE,
                 cluster_rows = FALSE,
-                cluster_columns = dendro_c2,
-                width = unit(10, "cm"),
+                cluster_columns = FALSE,
+                width = unit(0.5, "cm"),
                 raster_device = "png",
-                column_title = "D23580")
+                column_title = "Cluster")
 
   final = (ht1 + ht2+ ht3)
 
@@ -346,121 +367,62 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
 
 # Functional expression class annotation ----------------------------------
 
+
+## EC and divergence  -> which FECls? --------------------------------------
+
+  ec_divergence_clusters <- clusters_small[names(diverged_genes_vec)]
+
+View(data.frame(ec_divergence_clusters))
+
+ec_conserved_clusters <- clusters_small[names(conserved_genes_vec)]
+
+table(ec_conserved_clusters)
+
+length(conserved_genes_vec)
+
 ### Gene ontology -----------------------------------------------------------
 
   # GO enrichment on functional expression classes (FECls)
 
   goMappingPath <- file.path("D:/Documenten/PhD/Data/p_expression/expression/geneid2go.map") #belangrijk!!
 
-  outputPath = file.path("D:/Documenten/PhD/Data/expression/output_final")
+  outputPath = file.path("D:/Documenten/PhD/Data/p_expression/221108_latest_results")
 
-  fecl_n
+  # preallocate vector for the new ids
 
-  for (i in 1:max()) {
+  clusters_newnames <- vector(length = length(clusters_small))
 
-  go_fecls <- topGO_salmonella(goMappingPath, output_path = outputPath,
-                                              filename = "go_fecls",
-                               myInterestingGenes = fecl_n,
-                               top_nodes = 20)
+  for (i in 1:length(clusters_small)) {
 
+    id_position <- which(orthologs_D23580_14028s_LT2[ , 2] == names(clusters_small)[i])
 
-  # GO_clusters(dendrogram1sub, goMappingPath, outputPath, filename)
-
-  # change labels of dendro (so that the labels of the clusters are from LT2, i.e matching GO mapping)
-
-  dendro_ortho <- dendro
-
-  dendro$labels
-
-  length(dendro_ortho$labels)
-
-
-  for (i in 1:length(dendro_ortho$labels)) {
-
-    row <- which(orthologs_D23580_14028s_LT2[ ,2] == dendro_ortho$labels[i])
-
-    dendro_ortho$labels[i] <- orthologs_D23580_14028s_LT2[row,3]
-
+    clusters_newnames[i] <- orthologs_D23580_14028s_LT2[id_position, 3]
 
   }
 
-  # check
-  length(dendro$labels[is.na(dendro_ortho$labels)])
+  clusters_small_renamed <- clusters_small
+  names(clusters_small_renamed) <- clusters_newnames
 
-  # 6 ids are 'NA', these are genes that are found in D23580 and 14028s, but not in LT2
+  # perform GO enrichment
 
+    # results will be stored in a list (and written to a file - see function details)
 
-    # carry out GO enrichment analysis on a set of genes (clusters)
-    #
-    # Args:
-    #  goMappingPath: path to the custom GO mapping file for topGO
-    #  nameVector: vector containing the names of the cluster objects
-    #         cluster objects: list of gene identifiers from given expression class
-    #
-    # Return:
-    #   List with Tables of enriched GO classes per gene cluster
+  go_cluster_list <- vector(mode = "list", length = max(clusters_small))
 
-    library(topGO)
+  for (i in 1:max(clusters_small_renamed)) {
 
-    # 1. read/prepare mappings and cluster ids
+  fecl_n <- clusters_small_renamed[clusters_small_renamed == i]
 
-    geneID2GO = readMappings(file = goMappingPath)
-    geneNames = names(geneID2GO)
+  go_fecls <- topGO_salmonella(goMappingPath = goMappingPath, output_path = outputPath,
+                                              filename = paste("go_fecl_small", i, sep=""),
+                               myInterestingGenes = names(fecl_n),
+                               top_nodes = 30)
 
-    # 2. initialise test set (gene cluster)
+  go_cluster_list[[i]] <- go_fecls
 
-    # plot(dendro_ortho)
-    # abline(h=500, col="red")
+  } # end of for loop
 
-    clusters <- cutree(dendro_ortho, h = 500)
-    numberOfClusters = max(clusters)
-
-    resultSumm_list <- vector(mode = "list", length = numberOfClusters)
-
-    for(i in 1:max(clusters)) {
-      j = names(which(clusters == i))
-      myInterestingGenes = j
-      geneList = factor(as.integer(geneNames %in% myInterestingGenes))
-      names(geneList) = geneNames
-
-      # 2. Make topGO object
-
-      GOdata <- new("topGOdata", ontology = "BP", allGenes = geneList,
-                    nodeSize = 10,
-                    annot = annFUN.gene2GO, gene2GO = geneID2GO)
-
-      # 3. run enrichment test
-
-      resultFisher <- runTest(GOdata, algorithm = "classic", statistic = "fisher")
-
-      # 4. get summary table
-
-      resultSumm_list[[i]] <- GenTable(GOdata, classicFisher = resultFisher, topNodes = 50, numChar = 1000)
-
-      # showSigOfNodes(GOdata, score(resultKS.elim), firstSigNodes = 5, useInfo = 'all')
-      # savePath <- file.path(outputPath, paste(filename, "_GOenrichment", i, ".tab", sep = ""))
-      # write.table(resultSumm, savePath, sep="\t",row.names=FALSE)
-    }
-
-  }
-
-
-  savePath <- file.path("D:/Documenten/PhD/Data/GitHub/gccR/results/go_cluster14028s")
-
-  for (i in 1:length(resultSumm_list)) {
-
-    filename <- paste0(savePath, "_cl_", i)
-    write.table(resultSumm_list[[i]], filename, sep="\t",row.names=FALSE)
-
-    }
-
-
-  cluster_df <- data.frame(keyName=names(clusters), value=clusters, row.names=NULL)
-
-
-    filename <- paste0(savePath, "_genes_per_cluster")
-    write.table(cluster_df, filename, sep="\t",row.names=FALSE)
-
+  View(go_cluster_list[[10]])
 
 # Specialised annotation --------------------------------------------------
 
@@ -486,7 +448,46 @@ p <- ggplot(df, aes(x=values, colour=distrib_names)) +
     ids_wheeler2018_df <- read.table("~/PhD/Data/GitHub/concord/invasiveness/topgenes_wheeler2018.txt", quote="\"", comment.char="")
     ids_wheeler2018_vec <- ids_wheeler2018_df[ ,1]
 
-## make binary annotation matrix
+
+
+## Count occurence of gene sets across expression classes ------------------
+
+    subset <- clusters_small_renamed[which(names(clusters_small_renamed) %in% ids_T3SS1_vec)]
+    ids_T3SS2_vec
+
+    length(ids_wheeler2018_vec)
+
+    length(ids_anaerobic_vec)
+
+    list_of_geneVecs <- list("T3SS1" = ids_T3SS1_vec,
+                             "T3SS2" = ids_T3SS2_vec,
+                             "anaerobic" = ids_anaerobic_vec,
+                             "hostAdapt" = ids_wheeler2018_vec)
+
+
+    for (geneSet in names(list_of_geneVecs)) {
+
+      subset <- clusters_small_renamed[which(names(clusters_small_renamed) %in% list_of_geneVecs[[geneSet]])]
+
+         for (clusterName in 1:10) {
+
+          print(paste(geneSet,
+                        "genes in cluster", clusterName, ":", length(which(subset == clusterName)), sep = " "))
+
+            } # end of inner loop
+
+    } # end of outer loop
+
+
+
+## Get EC per extra annotation set -----------------------------------------
+
+    # STM14 identifier were used in stead of STM (Typhimurium LT2)
+
+    EC$ECfinal
+
+
+## make binary annotation matrix for heatmap visualisation
 
     # get names core submatrix and change 14028s IDs to LT2 IDs
 
