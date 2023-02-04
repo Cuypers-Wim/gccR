@@ -62,6 +62,10 @@ library(gccR)
 
   # View(tpm_14028s_expr)
 
+df <- exprList$headerInfo2["Experiment_id", , drop = FALSE]
+
+length(unique(as.character(df)))
+
 # EC calculation ----------------------------------------------------------
 
   ## EC ----------------------------------------------------------------------
