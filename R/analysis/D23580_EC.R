@@ -2,9 +2,7 @@
 # EC calculations for Typhimurium D23580 ----------------------------------
 
 # Calculate the ...
-
-
-
+devtools::document()
 # Packages ----------------------------------------------------------------
 
 library(gccR)
@@ -43,8 +41,6 @@ library(gccR)
   tpm_D23580_expr <- tpm_D23580_expr[ ,-1]
 
   # View(tpm_D23580_expr)
-
-
 
 ## strain 4/74 (from the same study as D23580) ------------------------------
 
