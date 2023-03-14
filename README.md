@@ -20,12 +20,12 @@ library(gccR)
 
 # path to two gene expression datasets (e.g downloaded from COLOMBOS.net) that you wish to compare
 
-dataset1 <- file.path("/I/have/seen/the/bad/moon/rising/expressionCompendium1.txt")
-dataset2 <- file.path("/I/wanna/know/have/you/ever/seen/the/rain/expressionCompendium2.txt")
+dataset1 <- file.path("/path/to/expressionCompendium1.txt")
+dataset2 <- file.path("/path/to/expressionCompendium2.txt")
 
 # path to a list of orthologs (column1 = gene IDs dataset1, and column2 = orthologuous dataset2 IDs)
 
-orthologs <- file.path("/this/path/is/truly/amazing/and/points/to/ortologs.txt")
+orthologs <- file.path("/this/path/points/to/ortologs.txt")
 
 # load gene expression data
 
