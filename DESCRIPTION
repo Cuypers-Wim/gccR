@@ -13,8 +13,10 @@ Imports:
 	weights (>= 1.0.4),
 	WGCNA (>= 1.70-3),
 	parallel (>= 4.1.1),
-	ComplexHeatmap (>= 2.8.0),
-	circlize (>= 0.4.14),
 	reshape2 (>= 1.4.4),
-	ggplot2 (>= 3.3.5),
-	topGO (>= 2.44.0)
+	ggplot2 (>= 3.3.5)
+	
+Suggests:
+    	topGO (>= 2.44.0),
+    	ComplexHeatmap (>= 2.8.0),
+	circlize (>= 0.4.14)
