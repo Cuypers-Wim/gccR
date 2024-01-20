@@ -6,6 +6,29 @@ gene co-expression conservation calculations in R
 - Expression conservation (EC) calculations between two gene expression compendia
 - Identification and analysis of functional expression classes (FECs)
 
+# ICC Method Overview
+
+## Input
+The ICC (Iterative Comparison of gene Co-expression) method starts with two gene expression matrices, M1 and M2. These matrices typically represent expression data for two distinct species. Both M1 and M2 should include measurements for multiple genes (rows) across various conditions (columns). In our experiments, log fold changes were used, where each expression value signifies a change relative to a "control" condition.
+
+## Expression Conservation (EC) Calculation
+We employ the *Iterative Comparison of gene Co-expression (ICC)* procedure for EC calculation, and implemented these steps:
+
+1. **Symmetrical Correlation Matrices**: Obtain symmetrical correlation matrices for each strain.
+2. **Orthologous Gene Pair Alignment**: Extract submatrices comprising genes with orthologous counterparts in the other strain and reorder them. This ensures that a given row 'n' in both M1 and M2 corresponds to an orthologous gene pair.
+3. **Weighted Pearson Correlation**: We next perform an iterative calculation of weighted Pearson correlation for each orthologous gene pair to derive the final EC score. The weight vector is determined by the previous set of correlation values, with negative values set to '0' to minimize the impact of highly divergent gene pairs.
+4. **Calculation Details**: Utilize the `wtd.cors` function from the weights package v1.0.4 for the weighted correlation calculations. Repeat the calculations until convergence is achieved, defined as a difference of less than 0.0001 (default value, adaptable) between a given EC value and the EC value of the previous iteration.
+
+<p align="center">
+  <img src="gccr.png" alt="Figure 1">
+</p>
+
+## EC Background Distributions
+Distinguishing actual biological divergence in co-expression conservation from technical noise involves estimating two distributions.
+
+1. **Conserved Distribution**: _Calculate how low EC values could be due to technical variation in the scenario of perfect conservation_. This distribution considers variation introduced by different conditions and is calculated by splitting the largest gene expression compendium and performing the ICC procedure. Optionally, the procedure can be repeated ten times on different data splits, considering experiment grouping.
+2. **Diverged Distribution**: _Calculate the maximum EC value attainable when there is no correlation between two gene co-expression profiles_. This involves permutating the expression values of only one gene per iteration, resulting in a conservative random distribution. Genes with EC values higher than the maximum of this distribution likely have conserved their gene co-expression profile across strains.
+
 # Installation
 
 ``` r
