@@ -81,10 +81,12 @@ EC <- getEC(corM_ortho$csM1, csM2_ordered, 0.001)
 perfectEC1  <- perfect_EC(exprList$exprValues2, csM2_ordered, conv = 0.001, maxIter = 200)
 randomEC1 <- divergedEC(exprList$exprValues2, csM2_ordered, singleCopyOrthologs, EC$ECweights)
 
-# These datasets can now be visualised and furter interrogated
+# These datasets can now be visualised and further interrogated
 
 ```
-
+# To Do
+- remove unnecessary dependencies
+- provide test dataset (gist?)
 # Credits
   Adapted from:
  - Sonego P. et al. (2015) 
