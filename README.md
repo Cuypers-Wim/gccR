@@ -36,6 +36,11 @@ Distinguishing actual biological divergence in co-expression conservation from t
 devtools::install_github("Cuypers-Wim/gccR")
 ```
 
+To download the branch with the latest improvements:
+``` r
+devtools::install_github("Cuypers-Wim/gccR@WLC_patch1")
+```
+
 # Example usage
 
 ```R
