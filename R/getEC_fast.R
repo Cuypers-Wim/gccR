@@ -49,7 +49,7 @@ getEC_fast <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
   
   function_geneCor <- function(x, matrix1 = m1, matrix2 = m2) {
     
-    WGCNA::cor(matrix1[x[1], ], matrix2[x[2], ])
+    WGCNA::cor(matrix1[x[1], ], matrix2[x[2], ], use = "pairwise.complete.obs", method = c("pearson"), quick = 0, nThreads = threads)
     
   }
   
