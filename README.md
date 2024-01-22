@@ -26,8 +26,8 @@ We employ the *Iterative Comparison of gene Co-expression (ICC)* procedure for E
 ## EC Background Distributions
 Distinguishing actual biological divergence in co-expression conservation from technical noise involves estimating two distributions.
 
-1. **Conserved Distribution**: _Calculate how low EC values could be due to technical variation in the scenario of perfect conservation_. This distribution considers variation introduced by different conditions and is calculated by splitting the largest gene expression compendium and performing the ICC procedure. Optionally, the procedure can be repeated ten times on different data splits, considering experiment grouping.
-2. **Diverged Distribution**: _Calculate the maximum EC value attainable when there is no correlation between two gene co-expression profiles_. This involves permutating the expression values of only one gene per iteration, resulting in a conservative random distribution. Genes with EC values higher than the maximum of this distribution likely have conserved their gene co-expression profile across strains.
+1. **Conserved Distribution**: _Calculate how low EC values could be due to technical variation in the scenario of perfect conservation_. This distribution considers variation introduced by different conditions and is calculated by splitting the largest gene expression compendium and performing the ICC procedure. Optionally, the procedure can be repeated ten times on different data splits, considering experiment grouping. *Genes with EC values lower than the minimum of this distribution have likely not conserved their co-expression profile across strains/species*
+2. **Diverged Distribution**: _Calculate the maximum EC value attainable when there is no correlation between two gene co-expression profiles_. This involves permutating the expression values of only one gene per iteration, resulting in a conservative random distribution. *Genes with EC values higher than the maximum of this distribution likely have conserved their gene co-expression profile across strains*.
 
 # Installation
 
