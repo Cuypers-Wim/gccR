@@ -79,7 +79,11 @@ randomEC1 <- divergedEC(exprList$exprValues2, csM2_ordered, singleCopyOrthologs,
 # These datasets can now be visualised and furter interrogated
 
 ```
-
+# ToDo
+- remove unnecessary dependencies
+- provide test dataset (gist?)
+- remove 'fast' suffices from function names and update functions
+- update roxygenise info
 # Credits
   Adapted from:
  - Sonego P. et al. (2015) 
