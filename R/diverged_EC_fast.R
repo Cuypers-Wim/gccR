@@ -111,17 +111,25 @@ divergedEC_fast <- function(expression = exprList$exprValues1, csM1 = corM_ortho
   if(missing(weights)) {
     
   # run the entire EC functions for the most accurate weighting
-  
+  # Print initial state of variables
+	  
+     print(paste("Initial state of csM1:", dim((csM1))))
+     print(paste("Initial state of csM2:", dim((csM2))))
+	  
   for (i in 1:nrow(expr)) {
     
     corVec <- row_cor_list[[i]]
-    
+	  
+    print(paste("State of corVec at iteration", i, ":", length(corVec)))
+	  
     corM_switched <- csM1
     corM_switched[i, ] <- corVec
     corM_switched[ ,i] <- corVec
     
     EC <- getEC_fast(corM_switched, csM2, conv, maxIter, threads = threads)
-    
+
+    print(paste("Output of getEC_fast at iteration", i, ":", length(EC$ECfinal)))
+
     ECVec[i] <- EC$ECfinal[i]
     
     print(paste("number of iterations done:  ", i))
