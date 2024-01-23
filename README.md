@@ -84,9 +84,7 @@ randomEC1 <- divergedEC(exprList$exprValues2, csM2_ordered, singleCopyOrthologs,
 # These datasets can now be visualised and further interrogated
 
 ```
-# To Do
-- remove unnecessary dependencies
-- provide test dataset (gist?)
+
 # Credits
   Adapted from:
  - Sonego P. et al. (2015) 
