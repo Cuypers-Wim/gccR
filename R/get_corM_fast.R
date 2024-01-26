@@ -1,37 +1,28 @@
-#' Construct Correlation Matrix (corM)
+#' Construct a Gene-by-Gene Correlation Matrix
 #'
-#'This function makes a 'gene X gene' correlation matrix from a 
-#''gene X condition' matrix
+#' Generates a correlation matrix representing gene-gene relationships based on their expression across different conditions. 
+#' This function computes a 'gene X gene' correlation matrix from an input 'gene X condition' matrix.
 #'
+#' @param expression A matrix of gene expression data. Rows represent genes and columns represent different conditions. The matrix should contain gene expression measurements across multiple conditions.
+#' @param dropNArows Logical flag indicating whether to exclude rows where more than 50% of the observations are missing. Defaults to `TRUE`. When set to `TRUE`, rows with more than 50% missing values ('NA') are removed before computing the correlation matrix.
+#' @param threads The number of threads to utilize for the correlation computation. This is particularly useful for handling large datasets. The correlation computation uses the `cor` function from the 'WGCNA' package.
 #'
-#' @param expression A matrix consisting of gene expression 
-#' measurements across multiple conditions (columns), for different genes (rows)
-#' @param dropNArows option to indicate whether to remove rows of which more 
-#' than 50% of the observations are missing. Defaults to "TRUE"
-#' @param threads Number of threads to be used for the correlation calculation 
-#' using the 'cor' function in the 'WGCNA' package
-#'
-#' @return Square gene X gene correlation matrix.
+#' @return A square matrix representing the gene-by-gene correlations. The matrix is computed based on pairwise complete observations using Pearson's correlation method. 
 #'
 #' @author Wim Cuypers, \email{wim.cuypers@@uantwerpen.be}
 #'
 #' @examples
-#'
-#' CorM1 <- correlationMatrix(expression_matrix_1)
+#' CorM1 <- get_corM(expression_matrix_1)
 #'
 #' @export
-#' 
+#'
 #' @import WGCNA
 
-get_corM_fast <- function(expression, dropNArows = TRUE, threads = 8) {
+get_corM <- function(expression, dropNArows = TRUE, threads = 8) {
 
   # library
 
   library("WGCNA")
-  
-  # BiocManager::install("GO.db")
-  # BiocManager::install("impute")
-  # BiocManager::install("preprocessCore")
   
   # Computes the correlation matrix
 

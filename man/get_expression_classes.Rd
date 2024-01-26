@@ -13,16 +13,8 @@ get_expression_classes(corM, coreGenes, height_cutoff = 1050)
 
 \item{height_cutoff}{}
 }
-\value{
-
-}
 \description{
 get functional expression classes
-}
-\examples{
-
-
-
 }
 \author{
 Wim Cuypers, \email{wim.cuypers@uantwerpen.be}

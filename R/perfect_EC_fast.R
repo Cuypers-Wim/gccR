@@ -1,35 +1,34 @@
-#' perfect EC distribution
+#' Calculate 'Perfect' Expression Conservation (EC) Distribution
 #'
-#'   Calculate 'perfect' expression conservation (EC) distribution. This function splits a compendium
-#'   in two parts, and calculates the EC for the two resulting matrices (i.e the weighted correlation of
-#'   each row of matrix 1 (m1) with the corresponding row in matrix 2 (m2) is calculated).
+#' This function computes the 'perfect' expression conservation (EC) distribution by dividing a gene expression compendium into two parts and calculating the EC between the resulting matrices. The EC for each gene pair is obtained as a weighted correlation between corresponding rows in the two matrices.
 #'
-#' @param exprM First 'gene X condition' expression matrix
-#' @param labelsM Correlation (sub)matrix. Gene IDs must be the same as used in the exprM
-#' @param conv Convergence treshold for EC calculations
-#' @param maxIter Maximum number of iterations for EC calculations
-#' @param threads Number of threads to use for cor calculations and row-wise EC calculations
-#' @param ortho OPTIONAL argument. Matrix consisting of IDs of genes used in the
-#' first compendium (first column) and gene IDs of the corresponding orthologs
-#' found in the secondcompendium
+#' @param exprM The first 'gene X condition' expression matrix.
+#' @param labelsM A correlation (sub)matrix with gene IDs matching those in `exprM`.
+#' @param conv Convergence threshold for the EC calculation process.
+#' @param maxIter The maximum number of iterations for the EC calculations.
+#' @param threads Number of threads to utilize for correlation calculations and row-wise EC calculations.
+#' @param ortho Optional: A matrix containing IDs of genes in the first compendium (first column) and corresponding orthologs in the second compendium (second column).
+#' @param splits The number of ways to split the dataset for EC calculation. Default is 1. When more than one, the function iteratively calculates EC over multiple splits of the dataset.
+#' @param experiment_info Information about the experiments, used to guide the splitting of the dataset.
+#' @param tolerance_thresh Tolerance threshold for balancing the size of each split.
 #'
-#' @return A  named vector of EC values representing perfect conservation
-#
+#' @return If `splits` is 1, a named vector of EC values representing perfect conservation. If `splits` is more than 1, a list containing EC values for each split, the mean EC value across splits, and variance of EC values per gene.
+#'
+#' @details The function initially splits the expression matrix `exprM` into two halves and computes the EC for these two parts. When `splits` is more than 1, the function performs multiple splits based on `experiment_info`, calculates EC for each split, and computes the mean and variance of EC values across splits.
+#'
 #' @author Wim Cuypers, \email{wim.cuypers@@uantwerpen.be}
 #'
 #' @examples
-#'
-#' perfectEC1  <- perfect_EC(exprList$exprValues2, core_submatrix2_ordered,
+#' perfectEC1 <- perfect_EC(exprList$exprValues2, core_submatrix2_ordered,
 #' conv = 0.001, maxIter = 200, threads = 8, ortho = singleCopyOrthologs_matrix)
 #'
 #' @export
-#'
 
 # ToDo:
 # - Update info function
 # - add functionality to calculate mean per gene when iterating over multiple splits of the dataset
 
-perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
+perfect_EC <- function(exprM, labelsM, conv = 0.001,
                             maxIter = 200, threads = 8, ortho,
                             splits = 1, experiment_info, tolerance_thresh = 0.05) {
 
@@ -47,8 +46,8 @@ perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
     half_exprM1 <- exprM[ , which(experiments_all %in% exp_combo)]
     half_exprM2 <- exprM[ , -(which(experiments_all %in% exp_combo))]
 
-    corM1 <- get_corM_fast(half_exprM1, dropNArows = TRUE, threads = 1)
-    corM2 <- get_corM_fast(half_exprM2, dropNArows = TRUE, threads = 1)
+    corM1 <- get_corM(half_exprM1, dropNArows = TRUE, threads = 1)
+    corM2 <- get_corM(half_exprM2, dropNArows = TRUE, threads = 1)
 
     subCorM1 = corM1[which(rownames(corM1) %in% rownames(labelsM)),
                      which(rownames(corM1) %in% rownames(labelsM))]
@@ -57,7 +56,7 @@ perfect_EC_fast <- function(exprM, labelsM, conv = 0.001,
 
     subCorM <- extract_core_submatrix(subCorM1, subCorM2)
     csM2_ordered <- sort_matrix(subCorM$csM1, subCorM$csM2)
-    EC <- getEC_fast(subCorM$csM1, csM2_ordered, conv, maxIter, threads = threads)
+    EC <- getEC(subCorM$csM1, csM2_ordered, conv, maxIter, threads = threads)
     ECresult <- EC$ECfinal
     ECresult
 

@@ -1,33 +1,29 @@
-#' diverged EC distribution
+#' Calculate Diverged Background Expression Conservation (EC) Distribution
 #'
-#'   Calculates the 'diverged' background expression conservation (EC) distribution.
+#' Computes the 'diverged' background EC distribution by calculating EC values between permutated gene expression data and a given correlation matrix. This function helps in assessing the conservation of gene expression patterns in a context where gene relationships are expected to have diverged.
 #'
+#' @param expression The 'gene X condition' expression matrix for the first dataset.
+#' @param csM1 The 'gene X gene' correlation matrix for core genes from the first dataset.
+#' @param csM2 The 'gene X gene' correlation (sub)matrix from the second dataset. Gene IDs must correspond to those in the `expression` matrix.
+#' @param weights Optional: Weights for calculating weighted correlations. If not provided, the function iteratively refines weights in each iteration to calculate EC.
+#' @param conv Convergence criterion indicating the permissible difference in EC values between iterations for convergence.
+#' @param maxIter The maximum number of iterations for EC calculation.
+#' @param mc_cores Number of CPU cores to be used for parallel processing.
 #'
-#' @param expression First 'gene X condition' expression matrix
-#' @param csM1 Correlation matrix of core genes - sample 1 
-#' @param csM2 Correlation (sub)matrix. Gene IDs must be the same as used in the exprM
-#' @param ortho Two-column dataframe of gene IDs in species1/sample1,
-#' and the corresponding orthologous gene IDs in species2/sample2
-#' @param weights Optional argument: weights that will be used for calculating the weighted correlation.
-#' If no weights are provided, the EC value will be calculated iteratively, refining the weights each iteration
-#' @param conv Convergence criterion indicating how much the final EC value per gene can
-#' differ from the result of the previous iteration
-#' @param maxIter The maximum number of iterations
-#' @param mc_cores Number of cpus to be used
+#' @return A named vector of EC values representing a diverged or random distribution of gene expression conservation.
 #'
-#' @return A named vector of EC values representing a random distribution
-#
+#' @details The function permutes rows of the expression matrix and calculates the EC between each permutated row and the rows of the csM1 matrix. If weights are not provided, it employs an iterative approach to refine the weights in each iteration. This process aims to model the divergence in gene expression patterns.
+#'
 #' @author Wim Cuypers, \email{wim.cuypers@@uantwerpen.be}
 #'
 #' @examples
-#'
 #' randomEC1 <- divergedEC(exprList$exprValues1, core_submatrix2_ordered,
 #'                          ortho, EC$ECweights, conv = 0.001, maxIter = 200)
 #'
 #' @export
 
-divergedEC_fast <- function(expression = exprList$exprValues1, csM1 = corM_ortho$csM1, 
-                       csM2 = csM2_ordered, ortho, 
+divergedEC <- function(expression = exprList$exprValues1, csM1 = corM_ortho$csM1, 
+                       csM2 = csM2_ordered, 
                        conv = 0.0001, maxIter = 100, threads = 1, weights = NA) {
 
 	# toDO: change argument name 'expression' to something else
@@ -44,6 +40,22 @@ divergedEC_fast <- function(expression = exprList$exprValues1, csM1 = corM_ortho
   # Remove rows for which more than 50% of the cells is "NaN" -> weglaten, ineens selectie en ordenen
 
   # expr <- expression[-which(rowMeans(is.na(expression)) > 0.5), ]
+  
+  if (is.matrix(csM1) == FALSE | is.matrix(csM2) == FALSE) stop("Argument 2 and/or 3 is not a matrix.")
+  if (nrow(csM1) != ncol(csM2) | nrow(csM2) != ncol(csM2)) stop("Matrix 2 and/or matrix 3 is not a square matrix.")
+  if(identical(dim(csM1), dim(csM2)) == FALSE) stop("The provided correlation matrices do not have the same dimensions.")
+  
+
+  # Check if rownames are identical between expression, csM1, and csM2
+  if (!identical(rownames(expression), rownames(csM1)) || !identical(rownames(expression), rownames(csM2))) {
+    stop("The row names of expression, csM1, and csM2 must be identical.")
+  }
+  
+  # Check if column names are identical between csM1 and csM2
+  if (!identical(colnames(csM1), colnames(csM2))) {
+    stop("The column names of csM1 and csM2 must be identical.")
+  }
+  
 
   # retain rows of which the ID is in csM1 + reorder
 

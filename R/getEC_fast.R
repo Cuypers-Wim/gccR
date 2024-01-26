@@ -1,35 +1,30 @@
-#' Get EC
+#' Calculate Expression Conservation (EC) Between Genes
 #'
-#'   Calculate the expression conservation (EC) between (orthologuous) genes from two correlation matrices.
-#' This function iteratively calculates the weighted correlation of a given row of m1
-#' with a row (with the same rowindex) in m2 until convergence.
+#' Computes the expression conservation (EC) between corresponding genes in two gene-gene correlation matrices. This function iteratively calculates a weighted correlation for each gene pair until convergence is reached.
 #'
-#' @param m1 First 'gene X gene' correlation matrix
-#' @param m2 Second 'gene X gene' correlation matrix
-#' @param conv Convergence criterion indicating how much the final EC value per gene can
-#' differ from the result of the previous iteration. Default = 0.001
-#' @param maxIter The maximum number of iterations. Default = 200
-#' @param threads Number of threads to be used for WGCNA::cor and parallel:: mclapply. 
-#' This will heavily speed up the analysis on linux and MAC computers, but 
-#' defaults to 1 to support usage on windows computers.
-#' 
-#' @return List (EClist) with the following elements:
-#'\enumerate{
-#'   \item EClist$ECfinal = a vector of final converged EC scores per gene
-#'   \item ECfinal$ECweights = a vector of the last set of weights used for the iterative, weighted correlation
-#' }
+#' @param m1 A 'gene X gene' correlation matrix representing the first set of genes.
+#' @param m2 A 'gene X gene' correlation matrix representing the second set of genes. These are typically orthologous genes to those in `m1`.
+#' @param conv Convergence criterion for the iterative process. The iteration stops when the change in EC value per gene between iterations is less than this threshold. Default value is 0.001.
+#' @param maxIter Maximum number of iterations to perform. Default is 200.
+#' @param threads Number of threads to use for computation. This parameter can significantly speed up the analysis on Linux and Mac computers. Default is set to 1 for compatibility with Windows systems.
+#'
+#' @return A list containing two elements:
+#'   \itemize{
+#'     \item `ECfinal`: A vector of the final EC scores for each gene, indicating the conservation of expression patterns.
+#'     \item `ECweights`: A vector of the final weights used in the last iteration of the weighted correlation calculation.
+#'   }
+#'
+#' @details The function first computes a simple correlation between corresponding genes in `m1` and `m2`. Iterative weighted correlations are then performed, updating the weights in each iteration based on the previous EC scores, until convergence is achieved based on the `conv` parameter.
+#'
 #' @author Wim Cuypers, \email{wim.cuypers@@uantwerpen.be}
 #'
 #' @examples
-#'
 #' EC <- getEC(corM_ortho$csM1, csM2_ordered, conv = 0.001, maxIter = 200, threads = 1)
-#' View(ECfinal$ECfinal)
+#' View(EC$ECfinal)
 #'
 #' @export
-#' 
 
-
-getEC_fast <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
+getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
 
   # check arguments
 
