@@ -31,10 +31,36 @@ Distinguishing actual biological divergence in co-expression conservation from t
 
 # Installation
 
+## From R (studio)
+
 ``` r
 # Installation is currently only possible via the development version from GitHub:
 devtools::install_github("Cuypers-Wim/gccR")
+
 ```
+
+## From a linux command line using conda
+
+Experiencing issues with R package incompatibilities or complex installation procedures? Don't worry, we've got you covered. 
+Whether you're running into errors with package conflicts or seeking a streamlined approach to deploy gccR on a server environment (such as a Linux server for parallel function execution), 
+this Conda environment setup will simplify the process.
+
+First install all packages required for gccR:
+
+``` 
+conda env create -f environment.yml
+conda activate env_name
+
+```
+
+Then run this line of code in the environment to install gccR
+
+``` 
+Rscript -e "devtools::install_github('Cuypers-Wim/gccR')"
+``` 
+
+Now you're good to go and use gccR interactive or via a script.
+
 
 # Example usage
 
