@@ -1,36 +1,27 @@
-#' Sort matrices
+#' Align Rows and Columns of Correlation Matrices
 #'
-#' This function sorts rows and columns of a symmetrical correlation matrix 
-#'   (second argument; csM2) according to the other (first argument; csM1).
-#' As a result, row n in Matrix 1 and row n in Matrix 2 correspond to the
-#' same gene or ortholog, with the row values describing the correlation
-#' of this gene with the other genes in the compendium in the exact same order.
+#' This function aligns the rows and columns of a second gene-gene correlation matrix (csM2) to match the order of another matrix (csM1). It ensures that the nth row (and column) in both matrices correspond to the same gene or its ortholog, maintaining the order of gene correlations.
 #'
-#' @param matrix1 First 'gene X gene' correlation matrix
-#' @param matrix2 Second 'gene X gene' correlation matrix
-#' @param ortho OPTIONAL argument. Two-column dataframe of gene IDs in species1/sample1,
-#' and the corresponding orthologous gene IDs in species2/sample2. 
+#' @param csM1 The reference 'gene X gene' correlation matrix.
+#' @param csM2 The 'gene X gene' correlation matrix to be aligned with csM1.
+#' @param ortho Optional: A two-column dataframe containing gene IDs in the first column and corresponding orthologous gene IDs in the second column. If provided, alignment is based on orthologous relationships. If omitted, the function assumes gene IDs in csM1 are identical to those in csM2.
 #'
-#' @return A matrix (csM2_ordered) that is row- and column ordered according to matrix1
-#' (either by identical gene IDs or ortholog gene IDs if the optional argument 'ortho' is provided)
+#' @return A matrix (csM2_ordered) that is reordered to match the row and column order of csM1. This reordering is done based on either identical gene IDs or ortholog gene IDs (if the 'ortho' argument is provided).
+#'
+#' @details The function reorders csM2 so that its genes (rows and columns) are in the same order as in csM1. If orthologous relationships are specified via the 'ortho' parameter, it uses this information to align genes correctly. Otherwise, it assumes identical gene IDs in both matrices and reorders accordingly.
 #'
 #' @author Wim Cuypers, \email{wim.cuypers@@uantwerpen.be}
 #'
 #' @examples
-#'
-#' # example when matrix 2 (csM2) has to be ordered according to matrix 1 (csM1)
-#' # the orthology info (corM_ortho$orthologs) is taken into account
-#'
+#' # Example when matrix 2 (csM2) has to be ordered according to matrix 1 (csM1) with orthology information:
 #' csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2, corM_ortho$orthologs)
 #'
-#' # example when matrix 2 (csM2) has to be ordered according to matrix 1 (csM1)
-#' # bot matrices contain identical gene IDs
-#'
-#' csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2)
+#' # Example when matrix 2 (csM2) has to be ordered according to matrix 1 (csM1) with identical gene IDs:
+#' csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2, as.matrix(singleCopyOrthologs), rename = TRUE)
 #'
 #' @export
 
-sort_matrix <- function(csM1, csM2, ortho) {
+sort_matrix <- function(csM1, csM2, ortho, rename = FALSE) {
 
   # checks
 
@@ -69,24 +60,52 @@ sort_matrix <- function(csM1, csM2, ortho) {
     csM2_ordered <- csM2[rowVec, rowVec]
 
   } else {
+    if (!is.matrix(ortho) || ncol(ortho) != 2) {
+      stop("Ortho is not a two-column matrix.")
+    }
 
-  for(i in 1:nRowCol) {
-
-    # lookup orthologID and corresponding location in core submatrix 2
-
-    rowGeneID <- (rownames(csM1))[i]
-    rowOrthologRowNumber <- which(ortho[ ,1] == rowGeneID)
-    rowOrthologID <- ortho[rowOrthologRowNumber, 2]
-    rowVec[i] <- which(rownames(csM2) == toString(rowOrthologID))
-
-  }
+    for(i in 1:nRowCol) {
+      
+      # lookup orthologID and corresponding location in core submatrix 2
+      
+      rowGeneID <- rownames(csM1)[i]
+      rowOrthologRowNumber <- which(ortho[ ,1] == rowGeneID)
+      
+      if (length(rowOrthologRowNumber) == 0) {
+        warning(paste("No ortholog found in the provided ortholog list for", rowGeneID))
+        next
+      }
+      
+      
+      rowOrthologID <- ortho[rowOrthologRowNumber, 2]
+      orthoIndex <- which(rownames(csM2) == as.character(rowOrthologID))
+      
+      if (length(orthoIndex) == 0) {
+        warning(paste("Ortholog ID not found in csM2 for", rowGeneID))
+        next
+      }
+      
+      rowVec[i] <- orthoIndex 
+      
+    }
 
   csM2_ordered <- csM2[rowVec, rowVec]
 
   }
 
-  # return ordered matrix
+  # return ordered matrix with original names
 
+  csM2_ordered
+  
+  # Rename if the option is set to TRUE
+  
+  if (rename) {
+    rownames(csM2_ordered) <- rownames(csM1)
+    colnames(csM2_ordered) <- colnames(csM1)
+  }
+  
+  # return renamed matrix 
+  
   csM2_ordered
 
 }

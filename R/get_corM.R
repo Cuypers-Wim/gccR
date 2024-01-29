@@ -12,8 +12,8 @@
 #' @author Wim Cuypers, \email{wim.cuypers@@uantwerpen.be}
 #'
 #' @examples
-#' CorM1 <- get_corM(sTyph_LT2, dropNArows = TRUE)
-#' CorM1
+#' CorM1 <- get_corM(expression_matrix_1)
+#'
 #' @export
 #'
 #' @import WGCNA

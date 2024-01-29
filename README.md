@@ -31,46 +31,53 @@ Distinguishing actual biological divergence in co-expression conservation from t
 
 # Installation
 
+## From R (studio)
+
 ``` r
 # Installation is currently only possible via the development version from GitHub:
 devtools::install_github("Cuypers-Wim/gccR")
+
 ```
 
-To download the branch with the latest improvements:
-``` r
-devtools::install_github("Cuypers-Wim/gccR@WLC_patch1")
+## From a linux command line using conda
+
+Experiencing issues with R package incompatibilities or complex installation procedures? Don't worry, we've got you covered. 
+Whether you're running into errors with package conflicts or seeking a streamlined approach to deploy gccR on a server environment (such as a Linux server for parallel function execution), 
+this Conda environment setup will simplify the process.
+
+First install all packages required for gccR:
+
+``` 
+conda env create -f environment.yml
+conda activate env_name
+
 ```
+
+Then run this line of code in the environment to install gccR
+
+``` 
+Rscript -e "devtools::install_github('Cuypers-Wim/gccR')"
+``` 
+
+Now you're good to go and use gccR interactive or via a script.
+
 
 # Example usage
 
 ```R
 library(gccR)
 
-# path to two gene expression datasets (e.g downloaded from COLOMBOS.net) that you wish to compare
 
-dataset1 <- file.path("/path/to/expressionCompendium1.txt")
-dataset2 <- file.path("/path/to/expressionCompendium2.txt")
 
-# path to a list of orthologs (column1 = gene IDs dataset1, and column2 = orthologuous dataset2 IDs)
 
-orthologs <- file.path("/this/path/points/to/ortologs.txt")
-
-# load gene expression data
-
-exprList <- readData(dataset1, dataset2, NAstring = "NaN", source = "COLOMBOS")
-
-# compute correlation matrices
-
-corM1 <- get_corM(exprList$exprValues1, dropNArows = TRUE)
-corM2 <- get_corM(exprList$exprValues2, dropNArows = TRUE)
+corM1 <- get_corM(sTyph_LT2, dropNArows = TRUE)
+corM2 <- get_corM(sTyph_SL1344, dropNArows = TRUE)
 
 # extract submatrices
 
 corM_ortho <- extract_core_submatrix(corM1, corM2, singleCopyOrthologs)
 
-# order matrix 2 according to matrix 1 (given a list of orthologs if IDs differ)
-
-csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2, singleCopyOrthologs)
+csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2, as.matrix(singleCopyOrthologs), rename = TRUE)
 
 # compute the expression conservation scores by means of iterative comparison of co-expression
 
@@ -78,14 +85,56 @@ EC <- getEC(corM_ortho$csM1, csM2_ordered, 0.001)
 
 # estimate background distributions
 
-perfectEC1  <- perfect_EC(exprList$exprValues2, csM2_ordered, conv = 0.001, maxIter = 200)
-randomEC1 <- divergedEC(exprList$exprValues2, csM2_ordered, singleCopyOrthologs, EC$ECweights)
+perfectEC1  <- perfect_EC(sTyph_LT2, csM2_ordered, conv = 0.001, maxIter = 200, threads = 1)
+randomEC1 <- divergedEC(sTyph_LT2, corM_ortho$csM1, csM2_ordered, EC$ECweights)
 
-# These datasets can now be visualised and further interrogated
+distr_plot <- plot_distributions(EC$ECfinal, perfectEC1$EC_final, randomEC1)
+distr_plot
+
+# Obtain 
+
+# Obtain vectors of diverged and conserved genes --------------------------
+
+distributions_list <- list(EC = EC$ECfinal, conserved = perfectEC1$EC_final, diverged = randomEC1)
+names(distributions_list)
+
+colnames_df <- c()
+min_val <- c()
+max_val <- c()
+
+for (i in 1:length(distributions_list)) {
+  
+  colnames_df[i] <- names(distributions_list)[i]
+  
+  min_val[i] <- min(distributions_list[[i]])
+  max_val[i] <- max(distributions_list[[i]])
+  
+  
+}
+
+# inspect the results
+
+results_df <- cbind(names = colnames_df, min = min_val, max = max_val)
+
+# diverged genes and their EC values
+
+EC$ECfinal[which(EC$ECfinal < min(perfectEC1$EC_final))]
+
+# conserved genes and their EC values
+
+EC$ECfinal[which(EC$ECfinal > max(randomEC1))]
+
 
 ```
 
+
 # Credits
-  Adapted from:
- - Sonego P. et al. (2015) 
- - Meysman P. et al. (2013)
+Adapted from:
+
+Meysman P, Sánchez-Rodríguez A, Fu Q, Marchal K, Engelen K. Expression divergence between Escherichia coli and Salmonella enterica serovar Typhimurium reflects their lifestyles. Mol Biol Evol. 2013 Jun;30(6):1302-14. doi: 10.1093/molbev/mst029. Epub 2013 Feb 20. PMID: 23427276; PMCID: PMC3649669.
+
+Sonego, P. et al. (2015). Comparative Analysis of Gene Expression: Uncovering Expression Conservation and Divergence Between Salmonella enterica Serovar Typhimurium Strains LT2 and 14028S. In: Mengoni, A., Galardini, M., Fondi, M. (eds) Bacterial Pangenomics. Methods in Molecular Biology, vol 1231. Humana Press, New York, NY. https://doi.org/10.1007/978-1-4939-1720-4_8
+
+ The Salmonella data included in this repository was retrieved from COLOMBOS (colombos.net). 
+ COLOMBOS Publication: 
+Moretto M, Sonego P, Dierckxsens N, Brilli M, Bianco L, Ledezma-Tejeida D, Gama-Castro S, Galardini M, Romualdi C, Laukens K, Collado-Vides J, Meysman P, Engelen K. COLOMBOS v3.0: leveraging gene expression compendia for cross-species analyses. Nucleic Acids Res. 2016 Jan 4;44(D1):D620-3. doi: 10.1093/nar/gkv1251. Epub 2015 Nov 19. PMID: 26586805; PMCID: PMC4702885.

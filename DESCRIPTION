@@ -1,22 +1,24 @@
 Package: gccR
-Title: gene co-expression conservation calculations in R
+Title: Gene Co-Expression Conservation Calculations in R
 Version: 1.0
 Authors@R: 
-    person("Wim", "Cuypers", , "wim.cuypers@uantwerpen.be", role = c("aut", "cre"),
+    person("Wim", "Cuypers", email = "wim.cuypers@uantwerpen.be", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1895-3526"))
 Description: Calculating the conservation of gene co-expression between two gene expression compendia.
-License: use_gpl3_license()
+License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.1
 Imports:
-	weights (>= 1.0.4),
-	WGCNA (>= 1.70-3),
-	parallel (>= 4.1.1),
-	reshape2 (>= 1.4.4),
-	ggplot2 (>= 3.3.5)
-	
+    weights (>= 1.0.4),
+    WGCNA (>= 1.70-3),
+    parallel (>= 4.1.1),
+    reshape2 (>= 1.4.4),
+    ggplot2 (>= 3.3.5)
 Suggests:
-    	topGO (>= 2.44.0),
-    	ComplexHeatmap (>= 2.8.0),
-	circlize (>= 0.4.14)
+    topGO (>= 2.44.0),
+    ComplexHeatmap (>= 2.8.0),
+    circlize (>= 0.4.14)
+Depends: 
+    R (>= 2.10)
+LazyData: true
