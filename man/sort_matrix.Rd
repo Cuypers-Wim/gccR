@@ -27,7 +27,7 @@ The function reorders csM2 so that its genes (rows and columns) are in the same 
 csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2, corM_ortho$orthologs)
 
 # Example when matrix 2 (csM2) has to be ordered according to matrix 1 (csM1) with identical gene IDs:
-csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2)
+csM2_ordered <- sort_matrix(corM_ortho$csM1, corM_ortho$csM2, as.matrix(singleCopyOrthologs), rename = TRUE)
 
 }
 \author{
