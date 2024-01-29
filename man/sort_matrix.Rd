@@ -4,7 +4,7 @@
 \alias{sort_matrix}
 \title{Align Rows and Columns of Correlation Matrices}
 \usage{
-sort_matrix(csM1, csM2, ortho)
+sort_matrix(csM1, csM2, ortho, rename = FALSE)
 }
 \arguments{
 \item{csM1}{The reference 'gene X gene' correlation matrix.}

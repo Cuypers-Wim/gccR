@@ -22,9 +22,9 @@
 #'
 #' @export
 
-divergedEC <- function(expression = exprList$exprValues1, csM1 = corM_ortho$csM1, 
-                       csM2 = csM2_ordered, 
-                       conv = 0.0001, maxIter = 100, threads = 1, weights = NA) {
+divergedEC <- function(expression = NULL, csM1 = NULL, 
+                       csM2 = NULL, conv = 0.0001, maxIter = 100, 
+                       threads = 1, weights = NULL) {
 
 	# toDO: change argument name 'expression' to something else
   # todo: add 'weights' option again to reuse weights
@@ -138,9 +138,9 @@ divergedEC <- function(expression = exprList$exprValues1, csM1 = corM_ortho$csM1
     corM_switched[i, ] <- corVec
     corM_switched[ ,i] <- corVec
     
-    EC <- getEC_fast(corM_switched, csM2, conv, maxIter, threads = threads)
+    EC <- getEC(corM_switched, csM2, conv, maxIter, threads = threads)
 
-    print(paste("Output of getEC_fast at iteration", i, ":", length(EC$ECfinal)))
+    print(paste("Output of getEC at iteration", i, ":", length(EC$ECfinal)))
 
     ECVec[i] <- EC$ECfinal[i]
     

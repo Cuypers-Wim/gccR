@@ -21,7 +21,7 @@
 #'
 #' @export
 
-sort_matrix <- function(csM1, csM2, ortho) {
+sort_matrix <- function(csM1, csM2, ortho, rename = FALSE) {
 
   # checks
 
@@ -60,24 +60,52 @@ sort_matrix <- function(csM1, csM2, ortho) {
     csM2_ordered <- csM2[rowVec, rowVec]
 
   } else {
+    if (!is.matrix(ortho) || ncol(ortho) != 2) {
+      stop("Ortho is not a two-column matrix.")
+    }
 
-  for(i in 1:nRowCol) {
-
-    # lookup orthologID and corresponding location in core submatrix 2
-
-    rowGeneID <- (rownames(csM1))[i]
-    rowOrthologRowNumber <- which(ortho[ ,1] == rowGeneID)
-    rowOrthologID <- ortho[rowOrthologRowNumber, 2]
-    rowVec[i] <- which(rownames(csM2) == toString(rowOrthologID))
-
-  }
+    for(i in 1:nRowCol) {
+      
+      # lookup orthologID and corresponding location in core submatrix 2
+      
+      rowGeneID <- rownames(csM1)[i]
+      rowOrthologRowNumber <- which(ortho[ ,1] == rowGeneID)
+      
+      if (length(rowOrthologRowNumber) == 0) {
+        warning(paste("No ortholog found in the provided ortholog list for", rowGeneID))
+        next
+      }
+      
+      
+      rowOrthologID <- ortho[rowOrthologRowNumber, 2]
+      orthoIndex <- which(rownames(csM2) == as.character(rowOrthologID))
+      
+      if (length(orthoIndex) == 0) {
+        warning(paste("Ortholog ID not found in csM2 for", rowGeneID))
+        next
+      }
+      
+      rowVec[i] <- orthoIndex 
+      
+    }
 
   csM2_ordered <- csM2[rowVec, rowVec]
 
   }
 
-  # return ordered matrix
+  # return ordered matrix with original names
 
+  csM2_ordered
+  
+  # Rename if the option is set to TRUE
+  
+  if (rename) {
+    rownames(csM2_ordered) <- rownames(csM1)
+    colnames(csM2_ordered) <- colnames(csM1)
+  }
+  
+  # return renamed matrix 
+  
   csM2_ordered
 
 }

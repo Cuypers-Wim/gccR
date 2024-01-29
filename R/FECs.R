@@ -5,13 +5,12 @@
 #' @param coreGenes Vector of core gene IDs
 #' @param height_cutoff
 #'
-#' @return
+#' @return heatmap 
 #
 #' @author Wim Cuypers, \email{wim.cuypers@@uantwerpen.be}
 #'
 #' @examples
-#'
-#'
+#' heatmap <- get_expression_classes_ht(corM, coreGenes, height_cutoff = 1050)
 #'
 #' @export
 
@@ -29,7 +28,7 @@
 
 # height_cutoff <- 800
 
-get_expression_classes <- function(corM, coreGenes, height_cutoff = 1050) {
+get_expression_classes_ht <- function(corM, coreGenes, height_cutoff = 1050) {
 
   # library
 

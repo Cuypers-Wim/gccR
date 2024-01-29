@@ -12,7 +12,7 @@
 #' @param experiment_info Information about the experiments, used to guide the splitting of the dataset.
 #' @param tolerance_thresh Tolerance threshold for balancing the size of each split.
 #'
-#' @return If `splits` is 1, a named vector of EC values representing perfect conservation. If `splits` is more than 1, a list containing EC values for each split, the mean EC value across splits, and variance of EC values per gene.
+#' @return If `splits` is 1, a named vector of EC values representing perfect conservation and a plot showing the EC values per split. If `splits` is more than 1, a list containing EC values for each split, the mean EC value across splits, and variance of EC values per gene.
 #'
 #' @details The function initially splits the expression matrix `exprM` into two halves and computes the EC for these two parts. When `splits` is more than 1, the function performs multiple splits based on `experiment_info`, calculates EC for each split, and computes the mean and variance of EC values across splits.
 #'
@@ -28,9 +28,9 @@
 # - Update info function
 # - add functionality to calculate mean per gene when iterating over multiple splits of the dataset
 
-perfect_EC <- function(exprM, labelsM, conv = 0.001,
-                            maxIter = 200, threads = 8, ortho,
-                            splits = 1, experiment_info, tolerance_thresh = 0.05) {
+perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
+                            maxIter = 200, threads = 1, ortho = NULL,
+                            splits = 1, experiment_info = NULL, tolerance_thresh = 0.05) {
 
   # libraries (for plotting)
 
@@ -62,19 +62,27 @@ perfect_EC <- function(exprM, labelsM, conv = 0.001,
 
   } # end of function_ec_subset
 
-
+  # Define experiments_all
+  # unlist experiment info
+  
+    experiments_all <- if ("Experiment_id" %in% rownames(experiment_info)) {
+      unlist(experiment_info["Experiment_id", ])
+    } else {
+      colnames(exprM)
+    }
+    
   # select relevant rows
 
   exprM <- exprM[which(rownames(exprM) %in% rownames(labelsM)), ]
 
-  # unlist experiment info
-
-  experiments_all <- unlist(experiment_info["Experiment_id", ])
-
   # multiple splits or single
 
   if (splits > 1) {
-
+     
+    if (is.null(experiment_info)) {
+      stop("experiment_info must be provided when splits > 1")
+    }
+  
     # preallocate #
 
     exp_sizes_vec <- vector(length = ncol(exprM))
