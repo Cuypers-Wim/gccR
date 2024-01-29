@@ -86,9 +86,7 @@ randomEC1 <- divergedEC(sTyph_LT2, corM_ortho$csM1, csM2_ordered, EC$ECweights)
 distr_plot <- plot_distributions(EC$ECfinal, perfectEC1$EC_final, randomEC1)
 distr_plot
 
-# Obtain 
-
-# Obtain vectors of diverged and conserved genes --------------------------
+# Obtain vectors of diverged and conserved genes
 
 distributions_list <- list(EC = EC$ECfinal, conserved = perfectEC1$EC_final, diverged = randomEC1)
 names(distributions_list)
@@ -118,7 +116,6 @@ EC$ECfinal[which(EC$ECfinal < min(perfectEC1$EC_final))]
 # conserved genes and their EC values
 
 EC$ECfinal[which(EC$ECfinal > max(randomEC1))]
-
 
 ```
 # Credits
