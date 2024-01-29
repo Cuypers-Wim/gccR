@@ -1,7 +1,6 @@
 # gccR
 gene co-expression conservation calculations in R
 
-
 # Functionality
 - Expression conservation (EC) calculations between two gene expression compendia
 - Identification and analysis of functional expression classes (FECs)
@@ -61,14 +60,10 @@ Rscript -e "devtools::install_github('Cuypers-Wim/gccR')"
 
 Now you're good to go and use gccR interactive or via a script.
 
-
 # Example usage
 
 ```R
 library(gccR)
-
-
-
 
 corM1 <- get_corM(sTyph_LT2, dropNArows = TRUE)
 corM2 <- get_corM(sTyph_SL1344, dropNArows = TRUE)
@@ -126,15 +121,13 @@ EC$ECfinal[which(EC$ECfinal > max(randomEC1))]
 
 
 ```
-
-
 # Credits
-Adapted from:
+## Methodology adapted from:
 
-Meysman P, Sánchez-Rodríguez A, Fu Q, Marchal K, Engelen K. Expression divergence between Escherichia coli and Salmonella enterica serovar Typhimurium reflects their lifestyles. Mol Biol Evol. 2013 Jun;30(6):1302-14. doi: 10.1093/molbev/mst029. Epub 2013 Feb 20. PMID: 23427276; PMCID: PMC3649669.
+- Meysman P, Sánchez-Rodríguez A, Fu Q, Marchal K, Engelen K. Expression divergence between Escherichia coli and Salmonella enterica serovar Typhimurium reflects their lifestyles. Mol Biol Evol. 2013 Jun;30(6):1302-14. doi: 10.1093/molbev/mst029. Epub 2013 Feb 20. PMID: 23427276; PMCID: PMC3649669.
 
-Sonego, P. et al. (2015). Comparative Analysis of Gene Expression: Uncovering Expression Conservation and Divergence Between Salmonella enterica Serovar Typhimurium Strains LT2 and 14028S. In: Mengoni, A., Galardini, M., Fondi, M. (eds) Bacterial Pangenomics. Methods in Molecular Biology, vol 1231. Humana Press, New York, NY. https://doi.org/10.1007/978-1-4939-1720-4_8
+- Sonego, P. et al. (2015). Comparative Analysis of Gene Expression: Uncovering Expression Conservation and Divergence Between Salmonella enterica Serovar Typhimurium Strains LT2 and 14028S. In: Mengoni, A., Galardini, M., Fondi, M. (eds) Bacterial Pangenomics. Methods in Molecular Biology, vol 1231. Humana Press, New York, NY. https://doi.org/10.1007/978-1-4939-1720-4_8
 
- The Salmonella data included in this repository was retrieved from COLOMBOS (colombos.net). 
- COLOMBOS Publication: 
-Moretto M, Sonego P, Dierckxsens N, Brilli M, Bianco L, Ledezma-Tejeida D, Gama-Castro S, Galardini M, Romualdi C, Laukens K, Collado-Vides J, Meysman P, Engelen K. COLOMBOS v3.0: leveraging gene expression compendia for cross-species analyses. Nucleic Acids Res. 2016 Jan 4;44(D1):D620-3. doi: 10.1093/nar/gkv1251. Epub 2015 Nov 19. PMID: 26586805; PMCID: PMC4702885.
+ ## The Salmonella data included in this repository was retrieved from the COLOMBOS database (colombos.net):
+ 
+- Moretto M, Sonego P, Dierckxsens N, Brilli M, Bianco L, Ledezma-Tejeida D, Gama-Castro S, Galardini M, Romualdi C, Laukens K, Collado-Vides J, Meysman P, Engelen K. COLOMBOS v3.0: leveraging gene expression compendia for cross-species analyses. Nucleic Acids Res. 2016 Jan 4;44(D1):D620-3. doi: 10.1093/nar/gkv1251. Epub 2015 Nov 19. PMID: 26586805; PMCID: PMC4702885.
