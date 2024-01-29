@@ -36,10 +36,19 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
 
   library("reshape2")
   library("ggplot2")
+  
+  # Define experiments_all based on experiment_info
+  
+  if (!is.null(experiment_info) && "Experiment_id" %in% colnames(experiment_info)) {
+    experiments_all <- unlist(experiment_info["Experiment_id", ])
+  } else {
+    experiments_all <- colnames(exprM)
+  }
+  
 
   ##### helper function #####
 
-  function_ec_subset <- function(exp_combo, exprM, labelsM) {
+  function_ec_subset <- function(exp_combo, exprM, labelsM, experiments_all = NULL) {
 
     # get EC for subsets of an expression matrix grouped per sample
 
@@ -62,15 +71,6 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
 
   } # end of function_ec_subset
 
-  # Define experiments_all
-  # unlist experiment info
-  
-    experiments_all <- if ("Experiment_id" %in% rownames(experiment_info)) {
-      unlist(experiment_info["Experiment_id", ])
-    } else {
-      colnames(exprM)
-    }
-    
   # select relevant rows
 
   exprM <- exprM[which(rownames(exprM) %in% rownames(labelsM)), ]
@@ -78,11 +78,11 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
   # multiple splits or single
 
   if (splits > 1) {
-     
-    if (is.null(experiment_info)) {
-      stop("experiment_info must be provided when splits > 1")
+    
+    if (is.null(experiments_all)) {
+      stop("experiment_info is not provided or doesn't have 'Experiment_id' column.")
     }
-  
+    
     # preallocate #
 
     exp_sizes_vec <- vector(length = ncol(exprM))
@@ -125,7 +125,7 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
 
     # calculate the EC for the resampled sets of experiments
 
-    EC_list <- mclapply(exp_combos_list, function_ec_subset, exprM, labelsM, mc.cores = threads)
+    EC_list <- mclapply(exp_combos_list, function_ec_subset, exprM, labelsM, experiments_all, mc.cores = threads)
 
     # add list item with the mean EC value* per gene
     # (*) the mean of the EC values calculated for each of the splits
@@ -163,12 +163,18 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
 
     ECresult <- vector(length = nrow(labelsM))
     names(ECresult) <- rownames(labelsM)
+    EC_list <- vector(mode = "list", length = 1)
+    names(EC_list) <- "EC_final"
     exp_combos_list <- vector(mode = "list", length = 1)
 
     middle = round((length(experiments_all)/2), digits = 0)
     exp_combos_list[[1]] <- experiments_all[1:middle]
-    EC_list <- mclapply(exp_combos_list, function_ec_subset, exprM, labelsM, mc.cores = 1)
-
+    nested_list <- mclapply(exp_combos_list, function_ec_subset, exprM, labelsM, experiments_all, mc.cores = 1)
+    
+    # Flatten the list
+    
+    EC_list$EC_final <- do.call(c, nested_list)
+    
   } # end if 'multiple splits = FALSE'
 
   ##### renaming, depending on the 'ortho' argument #####

@@ -19,3 +19,6 @@ Suggests:
     topGO (>= 2.44.0),
     ComplexHeatmap (>= 2.8.0),
     circlize (>= 0.4.14)
+Depends: 
+    R (>= 2.10)
+LazyData: true
