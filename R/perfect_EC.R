@@ -44,7 +44,20 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
   } else {
     experiments_all <- colnames(exprM)
   }
+
+  # Check if both inputs are matrices
+  if (!is.matrix(exprM) || !is.matrix(labelsM)) {
+    stop("Both inputs must be matrices.")
+  }
   
+  # stop if no similar rownames can be found
+  
+  common_row_names <- intersect(rownames(exprM), rownames(labelsM))
+  
+  # Stop if there are no common row names
+  if (length(common_row_names) == 0) {
+    stop("No common row names found.")
+  }
 
   ##### helper function #####
 
