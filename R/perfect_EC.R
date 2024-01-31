@@ -65,8 +65,8 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
 
     # get EC for subsets of an expression matrix grouped per sample
 
-    half_exprM1 <- exprM[ , which(experiments_all %in% exp_combo)]
-    half_exprM2 <- exprM[ , -(which(experiments_all %in% exp_combo))]
+    half_exprM1 <- exprM[ , which(experiments_all %in% exp_combo[[1]])]
+    half_exprM2 <- exprM[ , -(which(experiments_all %in% exp_combo[[1]]))]
 
     corM1 <- get_corM(half_exprM1, dropNArows = TRUE, threads = 1)
     corM2 <- get_corM(half_exprM2, dropNArows = TRUE, threads = 1)
