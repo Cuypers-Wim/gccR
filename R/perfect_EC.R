@@ -28,6 +28,7 @@
 # - Update info function
 # - add functionality to calculate mean per gene when iterating over multiple splits of the dataset
 
+
 perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
                             maxIter = 200, threads = 1, ortho = NULL,
                             splits = 1, experiment_info = NULL, tolerance_thresh = 0.05) {
@@ -59,31 +60,6 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
     stop("No common row names found.")
   }
 
-  ##### helper function #####
-
-  function_ec_subset <- function(exp_combo, exprM, labelsM, experiments_all = NULL) {
-
-    # get EC for subsets of an expression matrix grouped per sample
-
-    half_exprM1 <- exprM[ , which(experiments_all %in% exp_combo[[1]])]
-    half_exprM2 <- exprM[ , -(which(experiments_all %in% exp_combo[[1]]))]
-
-    corM1 <- get_corM(half_exprM1, dropNArows = TRUE, threads = 1)
-    corM2 <- get_corM(half_exprM2, dropNArows = TRUE, threads = 1)
-
-    subCorM1 = corM1[which(rownames(corM1) %in% rownames(labelsM)),
-                     which(rownames(corM1) %in% rownames(labelsM))]
-    subCorM2 = corM2[which(rownames(corM2) %in% rownames(labelsM)),
-                     which(rownames(corM2) %in% rownames(labelsM))]
-
-    subCorM <- extract_core_submatrix(subCorM1, subCorM2)
-    csM2_ordered <- sort_matrix(subCorM$csM1, subCorM$csM2)
-    EC <- getEC(subCorM$csM1, csM2_ordered, conv, maxIter, threads = threads)
-    ECresult <- EC$ECfinal
-    ECresult
-
-  } # end of function_ec_subset
-
   # select relevant rows
 
   exprM <- exprM[which(rownames(exprM) %in% rownames(labelsM)), ]
@@ -92,10 +68,6 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
 
   if (splits > 1) {
     
-    if (is.null(experiments_all)) {
-      stop("experiment_info is not provided or doesn't have 'Experiment_id' column.")
-    }
-    
     # preallocate #
 
     exp_sizes_vec <- vector(length = ncol(exprM))
@@ -103,11 +75,13 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
     EC_list <- vector(mode = "list", length = splits)
 
 
-    unique_experiment_ids <- unique(unlist(experiment_info["Experiment_id", ]))
-    expression_cols <- colnames(experiment_info)
-
-    if (length(experiments_all) != length(expression_cols)) stop("every row in the expression matrix should have an experiment id")
-
+    unique_experiment_ids <- unique(experiments_all)
+    
+    # ToDo - check functionality COLOMBOS experiment info headers
+    #expression_cols <- colnames(experiment_info)
+    # if (length(experiments_all) != length(expression_cols)) stop("every column in the expression matrix should have an experiment id")
+    
+    
     for (i in 1:length(unique_experiment_ids)) {
 
       exp_sizes_vec[i] <- length(which(experiments_all == unique_experiment_ids[i]))
@@ -117,8 +91,8 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
     combo_sum <- 0
     counter <- 0
     tolerance <- length(experiments_all)*tolerance_thresh
-
-    while (counter < splits) {
+    
+    while (counter <= splits) {
 
       # print iteration number
 
@@ -127,18 +101,43 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
       # resample a set of experiment combinations within the defined boundaries (i.e more or less equal halves +/- tolerance treshold)
 
       exp_selected_vec <- sample(exp_sizes_vec, (length(unique_experiment_ids)/2))
-      combo_sum <- sum(exp_selected_vec)
-      if (combo_sum > ((num_expr/2) - tolerance) && combo_sum < ((num_expr/2) + tolerance)) {
-        counter <- counter + 1
-        exp_combos_list[[counter]] <- unique_experiment_ids[which(exp_sizes_vec %in% exp_selected_vec)]
-      } else {
-        counter <- counter
+      
+      # Check if all values in exp_sizes_vec are 1
+      
+        if(all(exp_sizes_vec == 1)) {
+          
+          # All sizes are 1, handle this case specifically
+          message("All experiment sizes are 1. Applying special handling.")
+          
+          # we want to split the unique_experiment_ids evenly
+          half_length <- ceiling(length(unique_experiment_ids) / 2)
+          
+          # Sample half of the unique experiment IDs directly
+          sampled_ids <- sample(unique_experiment_ids, half_length)
+          
+          # Assuming exp_combos_list and counter are already initialized
+          counter <- counter + 1
+          exp_combos_list[[counter]] <- sampled_ids
+          
+          # Since all experiments are of size 1, any split is valid, so we might skip further checks
+         
+        } else {
+        
+          combo_sum <- sum(exp_selected_vec)
+        if (combo_sum > ((num_expr/2) - tolerance) && combo_sum < ((num_expr/2) + tolerance)) {
+          counter <- counter + 1
+          exp_combos_list[[counter]] <- unique_experiment_ids[which(exp_sizes_vec %in% exp_selected_vec)]
+        } else {
+          counter <- counter
+        }
       }
-    }
-
+      
+    } # end while loop counter
+    
     # calculate the EC for the resampled sets of experiments
-
-    EC_list <- mclapply(exp_combos_list, function_ec_subset, exprM, labelsM, experiments_all, mc.cores = threads)
+    
+    EC_list <- mclapply(exp_combos_list, internal_ec_subset, exprM = exprM, 
+                        labelsM = labelsM, experiments_all = experiments_all, mc.cores = threads)
 
     # add list item with the mean EC value* per gene
     # (*) the mean of the EC values calculated for each of the splits
@@ -167,6 +166,7 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
     EC_list$variance <- apply(perfect_ec_df, 1, var)
 
   } # end if 'multiple splits = TRUE'
+  
 
   if (splits == 1) {
 
@@ -178,12 +178,16 @@ perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
     names(ECresult) <- rownames(labelsM)
     EC_list <- vector(mode = "list", length = 1)
     names(EC_list) <- "EC_final"
+
     exp_combos_list <- vector(mode = "list", length = 1)
 
     middle = round((length(experiments_all)/2), digits = 0)
     exp_combos_list[[1]] <- experiments_all[1:middle]
-    nested_list <- mclapply(exp_combos_list, function_ec_subset, exprM, labelsM, experiments_all, mc.cores = 1)
     
+    nested_list <- mclapply(exp_combos_list, internal_ec_subset, 
+                            exprM = exprM, labelsM = labelsM, 
+                            experiments_all = experiments_all, mc.cores = 1)
+   
     # Flatten the list
     
     EC_list$EC_final <- do.call(c, nested_list)

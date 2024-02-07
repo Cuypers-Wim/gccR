@@ -11,7 +11,7 @@ divergedEC(
   conv = 1e-04,
   maxIter = 100,
   threads = 1,
-  weights = NULL
+  weights_fixed = NULL
 )
 }
 \arguments{

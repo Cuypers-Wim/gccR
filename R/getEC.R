@@ -7,6 +7,7 @@
 #' @param conv Convergence criterion for the iterative process. The iteration stops when the change in EC value per gene between iterations is less than this threshold. Default value is 0.001.
 #' @param maxIter Maximum number of iterations to perform. Default is 200.
 #' @param threads Number of threads to use for computation. This parameter can significantly speed up the analysis on Linux and Mac computers. Default is set to 1 for compatibility with Windows systems.
+#' @param weights Weight vector from a previous EC calculation - avoids the iterative calculation untill convergence 
 #'
 #' @return A list containing two elements:
 #'   \itemize{
@@ -24,7 +25,7 @@
 #'
 #' @export
 
-getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
+getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1, weights_fixed = NULL) {
 
   # check arguments
 
@@ -98,7 +99,6 @@ getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
   
   combos <- asplit(i_matrix, 1)
   
-  
   # now we can easily use mclapply() to parallelise the cor calculation per row
   
   corList <- mclapply(combos, function_geneCor, mc.cores = threads)
@@ -114,6 +114,11 @@ getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
   # preallocate
 
   EClist <- vector("list", length = 2)
+  
+  if(is.null(weights_fixed)) {
+    
+    # Code to execute when weights is NULL or not provided
+
   ECscores <- vector("list", length = maxIter)
 
   ECscores[[1]] <- corVec
@@ -126,8 +131,7 @@ getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
 
   # weighted correlation
   
-  ECscores[[2]] <- unlist(mclapply(combos, function_w_geneCor, mc.cores = threads))
-
+  ECscores[[2]] <- unlist(mclapply(combos, function_w_geneCor, weights = corVec, mc.cores = threads))
 
   # now we keep looping until convergence
   # (i.e for example difference between EC calculations per gene < 0.001 compared to the previous iteration)
@@ -164,6 +168,19 @@ getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1) {
   # store vector with converged EC and final weight values in named list
 
   EClist <- list("ECfinal" = ECscores[[i]], "ECweights" = finalWeightsVec)
+  
+  } else {
+    # check this part of the function
+    
+  ECfinal_fixed_weigths <- c()
+  ECfinal_fixed_weigths <- unlist(mclapply(combos, function_w_geneCor, weights = weights_fixed, mc.cores = threads))  
+    
+  # store vector with converged EC and final weight values in named list
+    
+  EClist <- list("ECfinal" = ECfinal_fixed_weigths, "ECweights" = weights_fixed)
+    
+    
+  }
 
   # return
 

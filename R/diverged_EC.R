@@ -24,10 +24,8 @@
 
 divergedEC <- function(expression = NULL, csM1 = NULL, 
                        csM2 = NULL, conv = 0.0001, maxIter = 100, 
-                       threads = 1, weights = NULL) {
+                       threads = 1, weights_fixed = NULL) {
 
-	# toDO: change argument name 'expression' to something else
-  # todo: add 'weights' option again to reuse weights
 
   # Calculates background distribution for diverged expression
 
@@ -37,9 +35,8 @@ divergedEC <- function(expression = NULL, csM1 = NULL,
   library("WGCNA")
   library("parallel")
 
-  # Remove rows for which more than 50% of the cells is "NaN" -> weglaten, ineens selectie en ordenen
 
-  # expr <- expression[-which(rowMeans(is.na(expression)) > 0.5), ]
+  # Checks & preprocessing -----------------------------------------------------
   
   if (is.matrix(csM1) == FALSE | is.matrix(csM2) == FALSE) stop("Argument 2 and/or 3 is not a matrix.")
   if (nrow(csM1) != ncol(csM2) | nrow(csM2) != ncol(csM2)) stop("Matrix 2 and/or matrix 3 is not a square matrix.")
@@ -56,7 +53,6 @@ divergedEC <- function(expression = NULL, csM1 = NULL,
     stop("The column names of csM1 and csM2 must be identical.")
   }
   
-
   # retain rows of which the ID is in csM1 + reorder
 
   expr <- expression[which(rownames(expression) %in% rownames(csM1)), ]
@@ -67,7 +63,7 @@ divergedEC <- function(expression = NULL, csM1 = NULL,
                                      was not the same as the number of rows in 
                                      correlation matrix 1")
   
-  # preallocate
+  # Preallocate -------------------------------------------------------------
 
   nRowCol <- nrow(csM2)
   corVec <- vector(length = nRowCol)
@@ -91,7 +87,10 @@ divergedEC <- function(expression = NULL, csM1 = NULL,
   # check if sums are still equal after resample
   # sum(expression_list[[3569]], na.rm = TRUE) == sum(resampled_rows[[3569]], na.rm = TRUE)
   
-  # calculate correlation between each permutated row and every row in the original expression matrix
+
+  # Cor permutated row and every other exprM row ----------------------------
+
+  ## calculate correlation between each permutated row and every row in the original expression matrix
   
   function_row_cor <- function(x, resampled_row, threads) {
     
@@ -113,20 +112,21 @@ divergedEC <- function(expression = NULL, csM1 = NULL,
   
   print("correlations with permutated rows calculated, moving on to EC calculations")
   
+
+  # EC calculations ---------------------------------------------------------
+
   # now we have a row_cor_list (list of vectors) containing the correlation of 
   # every permutated row with all other rows in the other compendium
   
-  # next, we loop over the rowcorrelations in row_cor_list
-  # each iteration, another row AND column will be replaced by a vector in rowcorrelations
+  # next, we loop over the row correlations in row_cor_list
+  # each iteration, another row AND column in the provided correlation matrix will be replaced by a vector from rowcorrelations
   # this new corM will be used to calculate the random EC with the corM of compendium 2
   
-  if(missing(weights)) {
-    
   # run the entire EC functions for the most accurate weighting
   # Print initial state of variables
-	  
-     print(paste("Initial state of csM1:", dim((csM1))))
-     print(paste("Initial state of csM2:", dim((csM2))))
+  
+  print(paste("Initial state of csM1:", dim((csM1))))
+  print(paste("Initial state of csM2:", dim((csM2))))
 	  
   for (i in 1:nrow(expr)) {
     
@@ -138,11 +138,33 @@ divergedEC <- function(expression = NULL, csM1 = NULL,
     corM_switched[i, ] <- corVec
     corM_switched[ ,i] <- corVec
     
+    if(is.null(weights_fixed)) {
+      
+    # Code to execute when weights_fixed is NULL or not provided
+    print("running in iterative mode calculating new weights")
+      
     EC <- getEC(corM_switched, csM2, conv, maxIter, threads = threads)
 
     print(paste("Output of getEC at iteration", i, ":", length(EC$ECfinal)))
 
     ECVec[i] <- EC$ECfinal[i]
+    
+    } else {
+      
+      print("running in 'reuse weights' mode")
+      
+      # This option works when weights from 'get_EC' are provided
+      # This will drastically speed up the calculations, as the EC does not need to be calculated until convergence anymore
+      # The effect on the actual random distribution is expected to be minimal
+      # The EC function should work with two vectors, and one vector as weights
+      
+      EC <- getEC(corM_switched, csM2, conv, maxIter, threads = threads, weights_fixed = weights_fixed)
+      
+      print(paste("Output of getEC at iteration", i, ":", length(EC$ECfinal)))
+      
+      ECVec[i] <- EC$ECfinal[i]
+      
+    }
     
     print(paste("number of iterations done:  ", i))
   }
@@ -150,28 +172,6 @@ divergedEC <- function(expression = NULL, csM1 = NULL,
   names(ECVec) <- rownames(csM2)
   ECVec
   
-  } else {
-    
-    # UNDER CONSTRUCTION
-    # to do: EC functie nodig die werkt met twee vectors en 1 waarde als gewicht
-    
-    csM2_list <- asplit(csM2, 1)
-    
-    EC_list <- vector("list", length = nrow(expr))
-    
-    for (i in 1:length(row_cor_list)) {
-      
-      EC_list[[i]] <- unlist(mclapply(csM2_list, function_row_cor, resampled_rows[[i]], threads = threads))
-     
-      print(paste("number of iterations done:  ", i))
-    }
-    
-    
-    names(ECVec) <- rownames(csM1)
-    ECVec
-    
-    
-  }
 
 
 }
