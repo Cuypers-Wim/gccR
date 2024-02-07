@@ -24,6 +24,7 @@
 #' View(EC$ECfinal)
 #'
 #' @export
+#' 
 
 getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1, weights_fixed = NULL) {
 
@@ -140,8 +141,9 @@ getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1, weights_fixe
   i <- 2
   
   ## todo: minimum 10 iteraties -> dan check en dan pas while loop
-
-  while ((all(ECscores[[i]] - ECscores[[i-1]] < conv) == "FALSE") && i < maxIter) {
+ 
+  # while ((all(ECscores[[i]] - ECscores[[i-1]] < conv) == "FALSE") && i < maxIter) {
+  while ((all(ECscores[[i]] - ECscores[[i-1]] < conv, na.rm = TRUE) == "FALSE") && i < maxIter) {
 
     i <- i + 1
 
@@ -153,10 +155,12 @@ getEC <- function(m1, m2, conv = 0.001, maxIter = 200, threads = 1, weights_fixe
     # use the changed ECscores[[i-1]] vector as weight for the weighted correlation
     
     ECscores[[i]] <- unlist(mclapply(combos, function_w_geneCor_iterative, mc.cores = threads))
+    
+    message(paste0("The value of i is ", i))
 
   }
 
-  print(paste("Total number of iterations untill convergence:  ", i))
+   print(paste("Total number of iterations untill convergence:  ", i))
   
   names(ECscores[[i]]) <- rownames(m1)
 

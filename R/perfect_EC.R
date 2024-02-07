@@ -28,7 +28,6 @@
 # - Update info function
 # - add functionality to calculate mean per gene when iterating over multiple splits of the dataset
 
-
 perfect_EC <- function(exprM = NULL, labelsM = NULL, conv = 0.001,
                             maxIter = 200, threads = 1, ortho = NULL,
                             splits = 1, experiment_info = NULL, tolerance_thresh = 0.05) {

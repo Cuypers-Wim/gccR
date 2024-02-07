@@ -80,8 +80,6 @@ internal_remove_zero_variance_rows <- function(mat1, mat2) {
 #' @export
 #' @keywords internal
 
-
-
 internal_ec_subset <- function(exp_combo, exprM, labelsM, 
                                experiments_all = NULL, threads = 1, 
                                maxIter = 200, conv = 0.001) {
@@ -90,9 +88,6 @@ internal_ec_subset <- function(exp_combo, exprM, labelsM,
   
   
   columns_kr <- which(experiments_all %in% exp_combo)
-  
-  message("The value of columns_kr is: ", paste0(columns_kr))
-  
   
   half_exprM1 <- exprM[ , columns_kr, drop = FALSE]
   half_exprM2 <- exprM[ , -columns_kr, drop = FALSE]
@@ -113,6 +108,9 @@ internal_ec_subset <- function(exp_combo, exprM, labelsM,
   subCorM <- extract_core_submatrix(subCorM1, subCorM2)
   csM2_ordered <- sort_matrix(subCorM$csM1, subCorM$csM2)
  
+  is.matrix(subCorM$csM1)
+  is.matrix(csM2_ordered)
+  
   EC <- getEC(subCorM$csM1, csM2_ordered, 
               maxIter = maxIter, threads = threads, conv = conv)
   ECresult <- EC$ECfinal
