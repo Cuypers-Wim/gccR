@@ -4,7 +4,7 @@
 \alias{getEC}
 \title{Calculate Expression Conservation (EC) Between Genes}
 \usage{
-getEC(m1, m2, conv = 0.001, maxIter = 200, threads = 1)
+getEC(m1, m2, conv = 0.001, maxIter = 200, threads = 1, weights_fixed = NULL)
 }
 \arguments{
 \item{m1}{A 'gene X gene' correlation matrix representing the first set of genes.}
@@ -16,6 +16,8 @@ getEC(m1, m2, conv = 0.001, maxIter = 200, threads = 1)
 \item{maxIter}{Maximum number of iterations to perform. Default is 200.}
 
 \item{threads}{Number of threads to use for computation. This parameter can significantly speed up the analysis on Linux and Mac computers. Default is set to 1 for compatibility with Windows systems.}
+
+\item{weights}{Weight vector from a previous EC calculation - avoids the iterative calculation untill convergence}
 }
 \value{
 A list containing two elements:
